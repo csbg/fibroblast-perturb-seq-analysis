@@ -26,22 +26,22 @@ ht_opt(
 
 # Load data ---------------------------------------------------------------
 
-counts_human <- read_tsv("data_raw/rna-seq/DataRaw_human.txt")
-samples_human <-
+counts_raw <- read_tsv("data_raw/rna-seq/DataRaw_human.txt")
+samples <-
   read_csv("data_raw/rna-seq/sample_data.csv", comment = "#") %>% 
   filter(organism == "human")
 
 
 rna_data_unfiltered <- DGEList(
   counts =
-    counts_human %>%
+    counts_raw %>%
     select(gene_name, Kat5_pos_1_2015_S15:Mock_pos_2017_S17),
   samples = 
-    samples_human %>%
+    samples %>%
     select(!sample),
-  group = samples_human$condition,
+  group = samples$condition,
   genes = 
-    counts_human %>% 
+    counts_raw %>% 
     select(gene_id, gene_type, level:strand)
 )
 
@@ -75,7 +75,6 @@ ggsave_default("rnaseq/human_logcpm_dist", width = 100, height = 50)
 rna_data <- calcNormFactors(rna_data)
 
 mds <- plotMDS(cpm(rna_data, log = TRUE), plot = FALSE)
-
 tibble(
   mds_1 = mds$x,
   mds_2 = mds$y,
@@ -100,8 +99,8 @@ design
 
 contrasts <- makeContrasts(
   TGFb_vs_healthy = TGFb - healthy,
-  Kat5i_vs_TGFb = Kat5_inhibitor1 - TGFb,
-  Kat5i_vs_healthy = Kat5_inhibitor1 - healthy,
+  Kat5i_vs_TGFb = Kat5i - TGFb,
+  Kat5i_vs_healthy = Kat5i - healthy,
   levels = colnames(design)
 )
 
@@ -154,11 +153,11 @@ top_genes <- c(
 )
 
 selected_samples <- 
-  samples_human %>% 
+  samples %>% 
   filter(condition != "Kat5_inhibitor1") %>% 
   pull(sample)
 
-mat_human <- 
+mat <- 
   cpm(rna_data, log = TRUE) %>%
   magrittr::set_rownames(rna_data$genes$gene_name) %>% 
   t() %>% 
@@ -168,10 +167,10 @@ mat_human <-
 
 
 (p <- Heatmap(
-  mat_human,
+  mat,
   cluster_rows = FALSE,
-  width = ncol(mat_human) * unit(2, "mm"),
-  height = nrow(mat_human) * unit(2, "mm"),
+  width = ncol(mat) * unit(2, "mm"),
+  height = nrow(mat) * unit(2, "mm"),
   row_split = rep(c("up", "down"), each = 20)
 ))
 ggsave_default("rnaseq/human_dge_heatmap", plot = p, width = 100)
