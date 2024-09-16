@@ -203,4 +203,4 @@ enrichr_genesets_mouse <-
     })
   })
 
-write_rds(enrichr_genesets_human, "data_generated/enrichr_genesets_mouse.rds")
+write_rds(enrichr_genesets_mouse, "data_generated/enrichr_genesets_mouse.rds")
