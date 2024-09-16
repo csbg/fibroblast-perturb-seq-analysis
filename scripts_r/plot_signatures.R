@@ -26,122 +26,10 @@ ht_opt(
 
 sce <- read_rds("data_generated/rna.rds")
 
-cluster_names_forte <- c(
-  "0"  = "Homeostatic Epicardial Derived",
-  "1"  = "Late Resolution",
-  "2"  = "Progenitor Like State",
-  "3"  = "Myofibroblasts",
-  "4"  = "Phagocytic",
-  "5"  = "Injury Response",
-  "6"  = "Matrifibrocyte",
-  "7"  = "Endocardial Derived",
-  "8"  = "Proliferative",
-  "9"  = "Epicardium",
-  "10" = "Interferon Response",
-  "11" = "Dendritic Cells"
-)
-
-gene_map <-
-  read_tsv("metadata/biomart_human_mouse_20210727.tsv") %>% 
-  select(human_gene = `Human gene name`, mouse_gene = `Gene name`) %>% 
-  distinct()
-
-# these datasets contain human genes, which we map to mouse genes
-markers_human <-
-  bind_rows(
-    .id = "ref",
-    
-    Amrute =
-      read_xlsx("data_raw/signatures/signatures_Amrute.xlsx", sheet = 1, skip = 1) %>% 
-      select(
-        cluster,
-        human_gene = ...1,
-        logFC = avg_log2FC,
-        p_adj = p_val_adj
-      ),
-    
-    Chaffin =
-      read_xlsx("data_raw/signatures/signatures_Chaffin.xlsx", sheet = 1) %>% 
-      select(
-        cluster = `Sub-Cluster`,
-        human_gene = Gene,
-        logFC = `limma-voom: logFC`,
-        p_adj = `limma-voom: Adjusted P-Value`
-      ),
-    
-    Fu =
-      read_xlsx("data_raw/signatures/signatures_Fu.xlsx", sheet = 1) %>% 
-      select(
-        cluster,
-        human_gene = gene,
-        logFC = avg_logFC,
-        p_adj = p_val_adj
-      ),
-    
-    Koenig = 
-      read_xlsx("data_raw/signatures/markers_Koenig.xlsx", sheet = 3) %>% 
-      select(
-        cluster,
-        human_gene = gene,
-        logFC = avg_log2FC,
-        p_adj = p_val_adj
-      ),
-    
-    Kuppe =
-      c("Fib1", "Fib2", "Fib3", "Fib4") %>% 
-      set_names() %>% 
-      map(\(s) read_xlsx("data_raw/signatures/signatures_Kuppe.xlsx", sheet = s)) %>% 
-      list_rbind(names_to = "cluster") %>% 
-      select(
-        cluster, 
-        human_gene = gene, 
-        logFC = avg_log2FC,
-        p_adj = p_val_adj
-      )
-  ) %>% 
-  left_join(
-    gene_map,
-    by = "human_gene",
-    relationship = "many-to-many"
-  ) %>% 
-  select(ref, cluster, gene = mouse_gene, logFC, p_adj) %>% 
-  filter(!is.na(gene))
-
-
-# table with five columns: dataset, cluster (cell type), marker gene,
-# log fold change, and adjusted p value
-# filtering: only keep significant genes (padj < 0.01)
-# and the 100 genes with highest logFC per cell type;
-markers_mouse <-
-  bind_rows(
-    .id = "ref",
-    
-    # the Buechler dataset can be simply loaded
-    Buechler = 
-      map(
-        1:10,
-        \(s) read_xlsx("data_raw/signatures/markers_Buechler.xlsx", sheet = s)
-      ) %>% 
-      list_rbind() %>% 
-      select(cluster, gene = Gene, logFC = avg_logFC, p_adj = p_val_adj),
-    
-    # the Forte dataset contains numbered clusters,
-    # to which we assign meaningful names
-    Forte =
-      map(
-        1:11,
-        \(s) read_xlsx("data_raw/signatures/markers_Forte.xlsx", sheet = s)
-      ) %>% 
-      list_rbind() %>%
-      select(cluster, gene, logFC = avg_logFC, p_adj = p_val_adj) %>%
-      mutate(cluster = recode(cluster, !!!cluster_names_forte)),
-  )
-
-markers <- 
-  bind_rows(markers_human, markers_mouse) %>% 
-  filter(p_adj < 0.01) %>%
-  slice_max(logFC, n = 100, by = c(ref, cluster)) %>%
-  bind_rows(read_csv("data_raw/signatures/markers_murine.csv", comment = "#"))
+markers <-
+  read_rds("data_generated/fibroblast_markers.rds") %>% 
+  select(!gene_human) %>% 
+  rename(gene = gene_mouse)
 
 
 
@@ -315,13 +203,14 @@ cell_type_order <- c(
   "Proliferative myofibroblast"
 )
 
-plot_signature_heatmap <- function(ref = NULL,
+plot_signature_heatmap <- function(data,
+                                   ref = NULL,
                                    color_limit = NULL,
                                    row_order = NULL) {
   col_prefix <- str_c("signature", ref, "", sep = "_")
   
   mat <- 
-    plot_data_sig %>% 
+    data %>% 
     summarise(
       .by = cell_type,
       across(starts_with(col_prefix), ~mean(.x, na.rm = TRUE))
@@ -367,25 +256,146 @@ plot_signature_heatmap <- function(ref = NULL,
   )
 }
 
-(p <- plot_signature_heatmap("Forte", color_limit = 2, row_order = cell_type_order))
+(p <- plot_signature_heatmap(plot_data_sig, "Forte",
+                             color_limit = 2, row_order = cell_type_order))
 ggsave_default("3f_signatures_Forte", plot = p)
 
-(p <- plot_signature_heatmap("Buechler"))
+(p <- plot_signature_heatmap(plot_data_sig, "Buechler"))
 ggsave_default("S3_signatures_Buechler", plot = p)
 
-(p <- plot_signature_heatmap("Koenig"))
+(p <- plot_signature_heatmap(plot_data_sig, "Koenig"))
 ggsave_default("S3_signatures_Koenig", plot = p)
 
 
-
-(p <- plot_signature_heatmap(color_limit = 2, row_order = cell_type_order))
+(p <-
+    plot_data_sig %>%
+    select(!contains(c("Buechler", "Forte"))) %>%
+    plot_signature_heatmap(color_limit = 2, row_order = cell_type_order))
 ggsave_default("XX_signatures_all", plot = p)
 
 walk(
   unique(markers$ref),
   \(ref) {
-    p <- plot_signature_heatmap(ref = ref, color_limit = 2,
+    p <- plot_signature_heatmap(plot_data_sig, ref = ref, color_limit = 2,
                                 row_order = cell_type_order)
     ggsave_default(str_glue("XX_signatures_{ref}"), plot = p)
   }
 )
+
+
+
+## Selected signatures ----
+
+selected_signatures <- tribble(
+  ~signature,                     ~type,
+  "Koenig_Fb1 - Baseline",        "steady state",
+  "Buechler_Col15a1+",            "steady state",
+  "Buechler_Ccl19+",              "steady state",
+  
+  "Koenig_Fb3 - GPX3",            "healthy",
+  "Amrute_Fib1",                  "healthy",
+  "Chaffin_FB-CNTNAP2",           "healthy",
+  "Chaffin_FB-ZBTB7C",            "healthy",
+  
+  "Koenig_Fb6 - TNC",             "heart failure",
+  "Koenig_Fb7 - CCL2",            "heart failure",
+  "Koenig_Fb8 - THBS4",           "heart failure",
+  "Amrute_Fib3",                  "heart failure",
+  "Amrute_Fib7",                  "heart failure",
+  "Chaffin_Activated fibroblast", "heart failure",
+  "Buechler_Lrrc15+",             "heart failure",
+  "Fu_FB0",                       "heart failure",
+  "Fu_FB5",                       "heart failure"
+) %>%
+  mutate(type = fct_inorder(type))
+
+
+plot_selected_signatures <- function(data,
+                                     selected_signatures,
+                                     color_limit = NULL,
+                                     row_order = NULL) {
+  data <-
+    data %>%
+    select(cell_type, contains(selected_signatures$signature))
+  
+  col_prefix <- "signature_"
+  
+  mat <-
+    data %>%
+    summarise(
+      .by = cell_type,
+      across(starts_with(col_prefix), ~mean(.x, na.rm = TRUE))
+    ) %>%
+    column_to_rownames("cell_type") %>%
+    as.matrix()
+  
+  colnames(mat) <-
+    colnames(mat) %>%
+    str_remove(col_prefix)
+  mat <- mat[, selected_signatures$signature]
+  
+  if (!is.null(row_order))
+    mat <- mat[row_order, ]
+  
+  if (is.null(color_limit))
+    color_limit <- max(range(mat))
+  
+  Heatmap(
+    mat,
+    col = circlize::colorRamp2(
+      c(-color_limit, 0, color_limit),
+      c("blue", "white", "red"),
+    ),
+    name = "Mean signature",
+    heatmap_legend_param = list(
+      at = round(c(-color_limit, 0, color_limit), 2),
+      direction = "horizontal",
+      grid_height = unit(2, "mm"),
+      legend_width = unit(10, "mm")
+    ),
+    
+    row_names_side = "left",
+    row_title = "cell type",
+    row_title_side = "left",
+    
+    cluster_rows = FALSE,
+    # cluster_columns = FALSE,
+    column_split = selected_signatures$type,
+    show_parent_dend_line = FALSE,
+    
+    width = ncol(mat) * unit(2, "mm") + unit(2, "mm"),
+    height = nrow(mat) * unit(2, "mm"),
+    
+    top_annotation = HeatmapAnnotation(
+      type = selected_signatures$type,
+      col = list(type = c(
+        "heart failure" = "red",
+        "healthy" = "green",
+        "steady state" = "gray"
+      )),
+      show_annotation_name = FALSE,
+      show_legend = FALSE,
+      annotation_legend_param = list(
+        type = list(
+          title = "type",
+          grid_width = unit(2, "mm"),
+          labels_gp = gpar(fontsize = BASE_TEXT_SIZE_PT),
+          title_gp = gpar(fontsize = BASE_TEXT_SIZE_PT)
+        )
+      )
+    )
+  ) %>%
+    draw(
+      column_title = "Population signatures",
+      column_title_side = "bottom",
+      column_title_gp = gpar(fontsize = BASE_TEXT_SIZE_PT)
+    )
+}
+
+
+(p <- plot_selected_signatures(plot_data_sig,
+                               selected_signatures,
+                               # color_limit = 2,
+                               row_order = cell_type_order))
+ggsave_default("XX_signatures_selected", plot = p,
+               type = "pdf", width = 150)
