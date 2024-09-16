@@ -29,14 +29,18 @@ ht_opt(
 counts_raw <- read_tsv("data_raw/rna-seq/DataRaw_mouse.txt")
 samples <-
   read_csv("data_raw/rna-seq/sample_data.csv", comment = "#") %>% 
-  filter(organism == "mouse", sample != "IK33_3D_S3") %>% 
+  filter(
+    organism == "mouse",
+    !sample %in% c("IK25_1D_S7", "IK33_3D_S3"),
+    condition != "Kat5i2"
+  ) %>% 
   mutate(condition = factor(condition) %>% fct_relevel("PBS"))
 
 
 rna_data_unfiltered <- DGEList(
   counts =
     counts_raw %>%
-    select(gene_name, IK22_1A_S4:IK32_3C_S12),
+    select(gene_name, all_of(samples$sample)),
   samples = 
     samples %>%
     select(!sample),
@@ -81,8 +85,9 @@ tibble(
   mds_2 = mds$y,
   label = rownames(mds$distance.matrix.squared)
 ) %>% 
+  left_join(samples, by = join_by(label == sample)) %>% 
   ggplot(aes(x = mds_1, y = mds_2)) +
-  geom_point() +
+  geom_point(aes(color = condition)) +
   geom_text_repel(aes(label = label), size = BASE_TEXT_SIZE_MM) +
   xlab(
     str_glue("Leading logFC dim 1 ({round(mds$var.explained[1] * 100, 1)} %)")
@@ -100,8 +105,8 @@ design
 
 contrasts <- makeContrasts(
   Kat5i1_vs_PBS = Kat5i1 - PBS,
-  Kat5i2_vs_PBS = Kat5i2 - PBS,
-  Kat5i1_vs_Kat5i2 = Kat5i1 - Kat5i2,
+  # Kat5i2_vs_PBS = Kat5i2 - PBS,
+  # Kat5i1_vs_Kat5i2 = Kat5i1 - Kat5i2,
   levels = colnames(design)
 )
 
@@ -113,7 +118,7 @@ efit <-
 
 plotSA(efit)
 
-dge <- 
+dge <-
   colnames(contrasts) %>% 
   set_names() %>% 
   map(\(c)
@@ -132,34 +137,36 @@ dge %>% save_table("rnaseq_mouse_dge")
 
 # Analyze results ---------------------------------------------------------
 
-dge %>% filter(p_adj <= 0.5)
-dge %>% filter(p_adj <= 0.5) %>% count(comparison)
+dge %>% filter(p_adj <= 0.05)
+dge %>% filter(p_adj <= 0.05) %>% count(comparison)
 
-ggplot(dge, aes(logFC, -log10(p))) +
+ggplot(dge, aes(logFC, -log10(p_adj))) +
   geom_point(alpha = .25, size = 0.1) +
   facet_wrap(vars(comparison)) +
   theme_pub()
 ggsave_default("rnaseq/mouse_volcano", width = 120, height = 40)
 
 # top 20 genes with pos/neg logFC
-top_genes <- c(
-  dge %>%
-    filter(comparison == "Kat5i1_vs_PBS") %>%
-    slice_max(logFC, n = 20, with_ties = FALSE) %>%
-    pull(gene),
-  dge %>%
-    filter(comparison == "Kat5i1_vs_PBS") %>%
-    slice_min(logFC, n = 20, with_ties = FALSE) %>%
-    pull(gene)
-)
+# top_genes <- c(
+#   dge %>%
+#     filter(comparison == "Kat5i1_vs_PBS") %>%
+#     slice_max(logFC, n = 20, with_ties = FALSE) %>%
+#     pull(gene),
+#   dge %>%
+#     filter(comparison == "Kat5i1_vs_PBS") %>%
+#     slice_min(logFC, n = 20, with_ties = FALSE) %>%
+#     pull(gene)
+# )
+
+top_genes <- readxl::read_excel("data_raw/rna-seq/DE plots_Fig4c.xlsx")$`Order columns`
 
 selected_samples <- 
   samples %>% 
   pull(sample)
 
 mat <- 
-  cpm(rna_data, log = TRUE) %>%
-  magrittr::set_rownames(rna_data$genes$gene_name) %>% 
+  cpm(rna_data_unfiltered, log = TRUE) %>%
+  magrittr::set_rownames(rna_data_unfiltered$genes$gene_name) %>% 
   t() %>% 
   scale() %>% 
   t() %>% 
@@ -171,22 +178,21 @@ mat <-
   cluster_rows = FALSE,
   column_split = samples$condition,
   width = ncol(mat) * unit(2, "mm"),
-  height = nrow(mat) * unit(2, "mm"),
-  row_split = rep(c("up", "down"), each = 20)
+  height = nrow(mat) * unit(2, "mm")
 ))
-ggsave_default("rnaseq/mouse_dge_heatmap", plot = p, width = 100)
+ggsave_default("rnaseq/mouse_dge_heatmap_selected_genes", plot = p, width = 100)
 
 
-dge %>%
-  select(gene, comparison, logFC) %>%
-  distinct(gene, comparison, .keep_all = TRUE) %>% 
-  pivot_wider(names_from = comparison, values_from = logFC) %>%
-  ggplot(aes(Kat5i1_vs_PBS, Kat5i2_vs_PBS)) +
-  geom_point(alpha = .25, size = .1) +
-  geom_smooth(method = "lm", linewidth = BASE_LINEWIDTH) +
-  coord_fixed() +
-  theme_pub()
-ggsave_default("rnaseq/mouse_Kat5i_logFC_comparison", width = 70)
+# dge %>%
+#   select(gene, comparison, logFC) %>%
+#   distinct(gene, comparison, .keep_all = TRUE) %>% 
+#   pivot_wider(names_from = comparison, values_from = logFC) %>% 
+#   ggplot(aes(Kat5i1_vs_PBS, Kat5i2_vs_PBS)) +
+#   geom_point(alpha = .25, size = .1) +
+#   geom_smooth(method = "lm", linewidth = BASE_LINEWIDTH) +
+#   coord_fixed() +
+#   theme_pub()
+# ggsave_default("rnaseq/mouse_Kat5i_logFC_comparison", width = 70)
 
 
 
@@ -395,4 +401,64 @@ treatment_colors <- c(PBS = "gray70", Kat5i1 = "#fb8072", Kat5i2 = "#80b1d3")
   )
 ))
 ggsave_default("rnaseq/mouse_cor_heatmap", plot = p)
+
+
+
+
+# Expression heatmaps -----------------------------------------------------
+
+plot_expression_heatmap <- function(genes, samples = NULL) {
+  samples <- samples %||% rownames(rna_data_unfiltered$samples)
+  
+  genes <- 
+    genes %>% 
+    intersect(rna_data_unfiltered$genes$gene_name)
+  
+  mat <- 
+    cpm(rna_data_unfiltered, log = TRUE) %>%
+    magrittr::set_rownames(rna_data_unfiltered$genes$gene_name) %>% 
+    t() %>% 
+    scale() %>% 
+    t() %>% 
+    magrittr::extract(genes, samples)
+  
+  Heatmap(
+    mat,
+    cluster_rows = TRUE,
+    width = ncol(mat) * unit(2, "mm"),
+    height = nrow(mat) * unit(2, "mm"),
+    column_split = rna_data_unfiltered$samples$condition
+  )
+}
+
+(p <- enrichr_genesets$fibroblast_markers$Forte_Matrifibrocyte %>%
+  plot_expression_heatmap())
+ggsave_default("rnaseq/mouse_expression_matrifibrocytes", plot = p, width = 100)
+
+
+(p <- enrichr_genesets$fibroblast_markers$Forte_Myofibroblasts %>% 
+  plot_expression_heatmap())
+ggsave_default("rnaseq/mouse_expression_myofibroblasts", plot = p, width = 100)
+
+
+plotEnrichment(
+  enrichr_genesets$fibroblast_markers$Forte_Matrifibrocyte,
+  dge %>%
+    filter(comparison == "Kat5i1_vs_PBS") %>%
+    arrange(desc(logFC)) %>% 
+    select(gene, logFC) %>%
+    deframe()
+)
+ggsave_default("rnaseq/mouse_enrichment_matrifibrocytes")
+
+plotEnrichment(
+  enrichr_genesets$fibroblast_markers$Forte_Myofibroblasts,
+  dge %>%
+    filter(comparison == "Kat5i1_vs_PBS") %>%
+    arrange(desc(logFC)) %>% 
+    select(gene, logFC) %>%
+    deframe()
+)
+ggsave_default("rnaseq/mouse_enrichment_myofibroblasts")
+
 

@@ -26,6 +26,11 @@ ht_opt(
 
 # Load data ---------------------------------------------------------------
 
+gene_map <-
+  read_tsv("metadata/biomart_human_mouse_20210727.tsv") %>% 
+  select(gene_human = `Human gene name`, gene_mouse = `Gene name`) %>% 
+  distinct()
+
 counts_raw <- read_tsv("data_raw/rna-seq/DataRaw_human.txt")
 samples <-
   read_csv("data_raw/rna-seq/sample_data.csv", comment = "#") %>% 
@@ -35,7 +40,7 @@ samples <-
 rna_data_unfiltered <- DGEList(
   counts =
     counts_raw %>%
-    select(gene_name, Kat5_pos_1_2015_S15:Mock_pos_2017_S17),
+    select(gene_name, all_of(samples$sample)),
   samples = 
     samples %>%
     select(!sample),
@@ -79,10 +84,17 @@ tibble(
   mds_1 = mds$x,
   mds_2 = mds$y,
   label = rownames(mds$distance.matrix.squared)
-) %>% 
+) %>%
+  left_join(samples, by = join_by(label == sample)) %>% 
+  mutate(sample_id = str_sub(label, -3)) %>% 
   ggplot(aes(x = mds_1, y = mds_2)) +
-  geom_point() +
-  geom_text_repel(aes(label = label), size = BASE_TEXT_SIZE_MM) +
+  geom_point(aes(color = condition, shape = patient)) +
+  geom_text_repel(
+    aes(label = sample_id),
+    size = BASE_TEXT_SIZE_MM,
+    sement.size = BASE_LINEWIDTH,
+    seed = 1
+  ) +
   xlab(
     str_glue("Leading logFC dim 1 ({round(mds$var.explained[1] * 100, 1)} %)")
   ) +
@@ -90,8 +102,12 @@ tibble(
     str_glue("Leading logFC dim 2 ({round(mds$var.explained[2] * 100, 1)} %)")
   ) +
   coord_fixed() +
-  theme_pub()
-ggsave_default("rnaseq/human_mds", width = 80)
+  theme_pub() +
+  theme(
+    legend.key.height = unit(2, "mm"),
+    legend.key.width = unit(2, "mm")
+  )
+ggsave_default("rnaseq/human_mds", type = "pdf", width = 80)
 
 design <- model.matrix(~0 + condition + patient, data = rna_data$samples)
 colnames(design) <- str_replace(colnames(design), "condition", "")
@@ -131,14 +147,98 @@ dge %>% save_table("rnaseq_human_dge")
 
 # Analyze results ---------------------------------------------------------
 
-dge %>% filter(p_adj <= 0.5)
-dge %>% filter(p_adj <= 0.5) %>% count(comparison)
+dge %>% filter(p_adj <= 0.1)
+dge %>% filter(p_adj <= 0.1) %>% count(comparison)
 
 ggplot(dge, aes(logFC, -log10(p))) +
   geom_point(alpha = .25, size = 0.1) +
   facet_wrap(vars(comparison)) +
   theme_pub()
-ggsave_default("rnaseq/human_volcano", width = 120, height = 40)
+ggsave_default("rnaseq/human_volcano", type = "pdf", width = 120, height = 40)
+
+plot_volcano <- function() {
+  selected_genes <-
+    tribble(
+      ~gene_mouse, ~type,
+      "Lox", "fibrotic",
+      "Cthrc1", "fibrotic",
+      "Col1a1", "fibrotic",
+      "Acta2", "fibrotic",
+      "Postn", "fibrotic",
+      "Meox1", "fibrotic",
+      "Pdgfra", "antifibrotic",
+      "Mgp", "antifibrotic",
+      "Spon2", "antifibrotic"
+    ) %>% 
+    left_join(gene_map) %>% 
+    filter(!is.na(gene_human))
+  
+  plot_data <- 
+    dge %>% 
+    filter(comparison != "Kat5i_vs_healthy")
+  
+  plot_data_highlight <- 
+    plot_data %>%
+    inner_join(selected_genes, by = join_by(gene == gene_human))
+  
+  ggplot(plot_data, aes(logFC, -log10(p))) +
+    geom_point(
+      size = 0.1,
+      shape = 20,
+      color = "gray80"
+    ) +
+    geom_point(
+      data = plot_data_highlight,
+      aes(color = type),
+      size = 0.5,
+      shape = 20,
+      show.legend = FALSE
+    ) +
+    geom_text_repel(
+      data = plot_data_highlight,
+      aes(label = gene),
+      size = BASE_TEXT_SIZE_MM,
+      segment.size = BASE_LINEWIDTH,
+      min.segment.length = 0.1,
+      seed = 1,
+      max.overlaps = 15
+    ) +
+    xlab("log-fold change") +
+    ylab("-log10 p-value") +
+    scale_color_manual(values = c(fibrotic = "#363594", antifibrotic = "#218b43")) +
+    facet_wrap(vars(comparison)) +
+    theme_pub() +
+    theme(panel.grid = element_blank())
+}
+
+plot_volcano()
+ggsave_default("rnaseq/human_volcano_pub", type = "pdf", width = 80, height = 40)
+
+
+plot_expression_heatmap <- function(genes, samples = NULL) {
+  samples <- samples %||% rownames(rna_data_unfiltered$samples)
+  
+  mat <- 
+    cpm(rna_data_unfiltered, log = TRUE) %>%
+    limma::removeBatchEffect(
+      batch = rna_data_unfiltered$samples$patient,
+      group = rna_data_unfiltered$samples$group
+    ) %>%
+    magrittr::set_rownames(rna_data_unfiltered$genes$gene_name) %>% 
+    t() %>% 
+    scale() %>% 
+    t() %>% 
+    magrittr::extract(genes, samples)
+  
+  Heatmap(
+    mat,
+    cluster_rows = FALSE,
+    # cluster_columns = FALSE,
+    width = ncol(mat) * unit(2, "mm"),
+    height = nrow(mat) * unit(2, "mm")
+    # row_split = rep(c("up", "down"), each = 20)
+  )
+}
 
 # top 20 genes with pos/neg logFC
 top_genes <- c(
@@ -157,23 +257,47 @@ selected_samples <-
   filter(condition != "Kat5_inhibitor1") %>% 
   pull(sample)
 
-mat <- 
-  cpm(rna_data, log = TRUE) %>%
-  magrittr::set_rownames(rna_data$genes$gene_name) %>% 
-  t() %>% 
-  scale() %>% 
-  t() %>% 
-  magrittr::extract(top_genes, selected_samples)
+(p <- plot_expression_heatmap(top_genes, selected_samples))
+ggsave_default("rnaseq/human_dge_heatmap", plot = p, type = "pdf", width = 100)
 
 
-(p <- Heatmap(
-  mat,
-  cluster_rows = FALSE,
-  width = ncol(mat) * unit(2, "mm"),
-  height = nrow(mat) * unit(2, "mm"),
-  row_split = rep(c("up", "down"), each = 20)
-))
-ggsave_default("rnaseq/human_dge_heatmap", plot = p, width = 100)
+# manually selected genes
+# manual_genes <- c(
+#   # fibrotic
+#   "LOX", "CTHRC1", "COL1A1", "ACTA2", "POSTN", "MEOX1",
+#   
+#   # antifibrotic/quiescent
+#   "PDGFRA", "MGP", "SPON2"
+# )
+
+gene_map <-
+  read_tsv("metadata/biomart_human_mouse_20210727.tsv") %>% 
+  select(gene_human = `Human gene name`, gene_mouse = `Gene name`) %>% 
+  distinct()
+
+manual_genes <- c("Spon2", "Col6a1", "Cygb", "Vcan",
+               # "Igfp4",
+               "Sox9", "Cebpb",
+               "Sfrp1",
+               # "Lgasl3",
+               "Prl2c3", "Mmp3", "Prl2c2", "Meox1",
+               "Bhlhe41", "Myl9", "Egr2", "Acta2", "Tagln", "Tpm1", "Ltbp2",
+               "Ccn2", "Hbegf", "Serpine1", "Pdlim1", "Lox", "Ccn4", "Postn",
+               "Tnc", "Loxl2", "Tgfb1", "Pmepa1", "Runx1", "Cthrc1", "Ncam1",
+               "Adam12", "Clu", "Mfap4", "Prg4", "Col3a1", "Col1a1", "Col1a2",
+               "Mmp14", "Adamts10", "Serpinh1", "Col4a2", "Loxl3", "Mmp23",
+               "Junb", "Ddah1", "Col5a1", "Myh9", "Foxc2", "Actn1", "Myl6",
+               "Jun", "Prss23", "Adam5", "Palld", "Hspg2")
+
+manual_genes <-
+  tibble(gene_mouse = manual_genes) %>% 
+  left_join(gene_map) %>% 
+  filter(!is.na(gene_human)) %>% 
+  pull(gene_human)
+
+(p <- plot_expression_heatmap(manual_genes))
+ggsave_default("rnaseq/human_selected_genes_heatmap", plot = p)
+
 
 
 
@@ -225,7 +349,7 @@ gsea_results <-
 
 ggplot(gsea_results, aes(NES, -log10(padj))) +
   geom_point(alpha = 0.25)
-ggsave_default("rnaseq/human_gsea_nes")
+ggsave_default("rnaseq/human_gsea_nes", type = "pdf")
 
 gsea_results %>% filter(padj <= 0.05)
 gsea_results %>% save_table("rnaseq_human_gsea")
@@ -237,39 +361,39 @@ gsea_results %>% save_table("rnaseq_human_gsea")
 selected_terms <- tribble(
   ~db, ~pathway, ~term_display,
   "MSigDB_Hallmark_2020",
-  "TNF-alpha Signaling via NF-kB",
-  "TNF-alpha Signaling via NF-kB (MSigDB)",
+    "TNF-alpha Signaling via NF-kB",
+    "TNF-alpha Signaling via NF-kB (MSigDB)",
   "MSigDB_Hallmark_2020",
-  "Inflammatory Response",
-  "Inflammatory Response (MSigDB)",
+    "Inflammatory Response",
+    "Inflammatory Response (MSigDB)",
   "KEGG_2019_Mouse",
-  "JAK-STAT signaling pathway",
-  "JAK-STAT signaling pathway (KEGG)",
+    "JAK-STAT signaling pathway",
+    "JAK-STAT signaling pathway (KEGG)",
   "KEGG_2019_Mouse",
-  "Hedgehog signaling pathway",
-  "Hedgehog signaling pathway (KEGG)",
+    "Hedgehog signaling pathway",
+    "Hedgehog signaling pathway (KEGG)",
   "WikiPathways_2019_Mouse",
-  "Striated Muscle Contraction WP216",
-  "Striated Muscle Contraction (WikiPathways)",
+    "Striated Muscle Contraction WP216",
+    "Striated Muscle Contraction (WikiPathways)",
   "MSigDB_Hallmark_2020",
-  "Oxidative Phosphorylation",
-  "Oxidative Phosphorylation (MSigDB)",
+    "Oxidative Phosphorylation",
+    "Oxidative Phosphorylation (MSigDB)",
   "Reactome_2022",
-  "Mitochondrial Translation R-HSA-5368287",
-  "Mitochondrial Translation (Reactome)",
+    "Mitochondrial Translation R-HSA-5368287",
+    "Mitochondrial Translation (Reactome)",
   "WikiPathways_2019_Mouse",
-  "Retinol metabolism WP1259",
-  "Retinol metabolism (WikiPathways)",
+    "Retinol metabolism WP1259",
+    "Retinol metabolism (WikiPathways)",
   "MSigDB_Hallmark_2020",
-  "G2-M Checkpoint",
-  "G2-M Checkpoint (MSigDB)"
+    "G2-M Checkpoint",
+    "G2-M Checkpoint (MSigDB)"
 ) %>% 
   bind_rows(
     tibble(
       db = "fibroblast_markers",
-      pathway = names(enrichr_genesets$fibroblast_markers),
-      term_display = str_c(pathway, " (markers)")
-    )
+      pathway = names(enrichr_genesets$fibroblast_markers)
+    ) %>% 
+      mutate(term_display = str_replace(pathway, "(.+?)_(.+)", "\\2 (\\1)"))
   )
 
 
@@ -328,8 +452,49 @@ plot_terms(selected_terms)
 ggsave_default("rnaseq/human_gsea", type = "pdf", width = 70)
 
 
+terms_for_main_fig <- c(
+  "Oxidative Phosphorylation",
+  "Mitochondrial Translation R-HSA-5368287",
+  "G2-M Checkpoint",
+  "Amrute_Fib1",
+  "Amrute_Fib3",
+  "Amrute_Fib5",
+  "Chaffin_Activated fibroblast",
+  "Fu_FB2",
+  "Fu_FB3",
+  "Koenig_Fb1 - Baseline",
+  "Koenig_Fb6 - TNC",
+  "Koenig_Fb8 - THBS4",
+  "Koenig_Fb9 - SERPINE1",
+  "Kuppe_Fib2",
+  "Kuppe_Fib3",
+  "Kuppe_Fib4",
+  "Buechler_Cxcl5+",
+  "Buechler_Lrrc15+"
+)
+
+selected_terms %>% 
+  filter(pathway %in% terms_for_main_fig) %>% 
+  mutate(
+    term_display =
+      factor(term_display) %>%
+      fct_inorder() %>%
+      fct_rev()
+  ) %>% 
+  plot_terms()
+ggsave_default("rnaseq/human_gsea_pub_main_fig", type = "pdf", width = 62)
+
+selected_terms %>% 
+  filter(!pathway %in% terms_for_main_fig) %>% 
+  plot_terms()
+ggsave_default("rnaseq/human_gsea_pub_supp_fig", type = "pdf", width = 66)
+
+
+
 
 # Correlation heatmap -----------------------------------------------------
+
+## Counts ----
 
 corr_mat <-
   limma::removeBatchEffect(
@@ -368,4 +533,46 @@ distance <- as.dist(1 - corr_mat)
   show_column_dend = FALSE,
   show_column_names = FALSE
 ))
-ggsave_default("rnaseq/human_cor_heatmap", plot = p)
+ggsave_default("rnaseq/human_cor_heatmap", plot = p, width = 150, type = "pdf")
+
+
+## log-fold changes ----
+
+corr_mat <-
+  dge %>% 
+  distinct(comparison, gene, .keep_all = TRUE) %>% 
+  pivot_wider(names_from = comparison, values_from = logFC, id_cols = gene) %>% 
+  mutate(TGFb_vs_Kat5i = -Kat5i_vs_TGFb) %>% 
+  select(!c(gene, Kat5i_vs_TGFb)) %>%
+  cor()
+
+distance <- as.dist(1 - corr_mat)
+
+(p <- Heatmap(
+  corr_mat,
+  col = circlize::colorRamp2(
+    seq(min(corr_mat), max(corr_mat), length.out = 9),
+    color("davos", reverse = TRUE)(9),
+  ),
+  
+  name = "correlation of\nlog-fold changes",
+  heatmap_legend_param = list(
+    at = round(c(min(corr_mat), max(corr_mat)), 2),
+    border = FALSE,
+    grid_width = unit(2, "mm"),
+    legend_height = unit(15, "mm")
+  ),
+  
+  clustering_distance_rows = distance,
+  clustering_distance_columns = distance,
+  row_dend_gp = gpar(lwd = 0.5),
+  row_title = "samples",
+  row_title_side = "right",
+  
+  width = unit(20, "mm"),
+  height = unit(20, "mm"),
+  
+  show_column_dend = FALSE,
+  show_column_names = FALSE
+))
+ggsave_default("rnaseq/human_cor_heatmap_logfc", plot = p, width = 150, type = "pdf")
