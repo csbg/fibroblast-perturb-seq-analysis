@@ -31,8 +31,8 @@ samples <-
   read_csv("data_raw/rna-seq/sample_data.csv", comment = "#") %>% 
   filter(
     organism == "mouse",
-    !sample %in% c("IK25_1D_S7", "IK33_3D_S3"),
-    condition != "Kat5i2"
+    # !sample %in% c("IK25_1D_S7", "IK33_3D_S3"),
+    # condition != "Kat5i2"
   ) %>% 
   mutate(condition = factor(condition) %>% fct_relevel("PBS"))
 
@@ -52,10 +52,11 @@ rna_data_unfiltered <- DGEList(
 
 
 
-# Perform DGE -------------------------------------------------------------
+# Normalization -----------------------------------------------------------
 
-genes_to_keep <- filterByExpr(rna_data_unfiltered)
-rna_data <- rna_data_unfiltered[genes_to_keep,, keep.lib.sizes = FALSE]
+# genes_to_keep <- filterByExpr(rna_data_unfiltered)
+# rna_data <- rna_data_unfiltered[genes_to_keep,, keep.lib.sizes = FALSE]
+rna_data <- rna_data_unfiltered
 
 rbind(
   cpm(rna_data_unfiltered, log = TRUE) %>% 
@@ -75,7 +76,6 @@ rbind(
     legend.key.width = unit(2, "mm")
   )
 ggsave_default("rnaseq/mouse_logcpm_dist", width = 100, height = 50)
-
 
 rna_data <- calcNormFactors(rna_data)
 
@@ -97,7 +97,73 @@ tibble(
   ) +
   coord_fixed() +
   theme_pub()
-ggsave_default("rnaseq/mouse_mds", width = 80)
+ggsave_default("rnaseq/mouse_mds_nofilter", width = 80)
+
+plot_cpm_boxplots <- function(data) {
+  data %>% 
+    cpm(log = TRUE) %>% 
+    as_tibble() %>% 
+    pivot_longer(everything(), names_to = "sample", values_to = "logCPM") %>% 
+    ggplot(aes(sample, logCPM)) +
+    geom_boxplot(
+      linewidth = BASE_LINEWIDTH,
+      outlier.size = 0.5,
+      outlier.alpha = 0.25
+    ) +
+    theme_pub(rotate_x_labels = TRUE)
+}
+
+plot_cpm_boxplots(rna_data_unfiltered$counts)
+ggsave_default("rnaseq/mouse_logcpm_boxplots_raw",
+               width = 80, height = 50)
+
+plot_cpm_boxplots(rna_data)
+ggsave_default("rnaseq/mouse_logcpm_boxplots_normalized",
+               width = 80, height = 50)
+
+
+counts_raw %>% 
+  summarise(
+    across(starts_with("IK"), sum)
+  ) %>% 
+  pivot_longer(everything(), names_to = "sample", values_to = "library_size") %>% 
+  ggplot(aes(sample, library_size)) +
+  geom_col() +
+  theme_pub(rotate_x_labels = TRUE)
+ggsave_default("rnaseq/mouse_library_sizes", width = 80, height = 50)
+
+counts_raw %>% 
+  filter(gene_name == "Pclaf")
+
+cpm(rna_data_unfiltered, log = TRUE) %>% 
+  magrittr::set_rownames(rna_data_unfiltered$genes$gene_name) %>% 
+  magrittr::extract("Pclaf", )
+
+cpm(rna_data_unfiltered, log = TRUE) %>% 
+  magrittr::set_rownames(rna_data_unfiltered$genes$gene_name) %>% 
+  magrittr::extract("Pclaf", )
+
+rna_data_unfiltered$counts %>% 
+  magrittr::set_rownames(rna_data_unfiltered$genes$gene_name) %>% 
+  magrittr::extract("Pclaf", ) %>% 
+  cpm(log = TRUE)
+
+
+rna_data_unfiltered %>% 
+  calcNormFactors() %>%
+  cpm(log = TRUE) %>% 
+  magrittr::set_rownames(rna_data_unfiltered$genes$gene_name) %>%
+  magrittr::extract("Pclaf", ) %>% 
+  enframe("sample", "logCPM") %>%
+  ggplot(aes(sample, logCPM)) +
+  geom_col() +
+  theme_pub(rotate_x_labels = TRUE)
+  {.}
+ggsave_default("rnaseq/mouse_expression_Pclaf", width = 80, height = 50)
+
+
+
+# Perform DGE -------------------------------------------------------------
 
 design <- model.matrix(~0 + condition, data = rna_data$samples)
 colnames(design) <- str_replace(colnames(design), "condition", "")
@@ -133,6 +199,8 @@ dge <-
 dge
 dge %>% save_table("rnaseq_mouse_dge")
 
+plotMD(efit)
+
 
 
 # Analyze results ---------------------------------------------------------
@@ -144,7 +212,7 @@ ggplot(dge, aes(logFC, -log10(p_adj))) +
   geom_point(alpha = .25, size = 0.1) +
   facet_wrap(vars(comparison)) +
   theme_pub()
-ggsave_default("rnaseq/mouse_volcano", width = 120, height = 40)
+ggsave_default("rnaseq/mouse_volcano_nofilter", width = 120, height = 40)
 
 # top 20 genes with pos/neg logFC
 # top_genes <- c(
@@ -344,7 +412,7 @@ plot_terms <- function(terms) {
 }
 
 plot_terms(selected_terms)
-ggsave_default("rnaseq/mouse_gsea", type = "pdf", width = 70)
+ggsave_default("rnaseq/mouse_gsea_nofilter", type = "pdf", width = 70)
 
 
 
@@ -400,7 +468,7 @@ treatment_colors <- c(PBS = "gray70", Kat5i1 = "#fb8072", Kat5i2 = "#80b1d3")
     )
   )
 ))
-ggsave_default("rnaseq/mouse_cor_heatmap", plot = p)
+ggsave_default("rnaseq/mouse_cor_heatmap_all", plot = p)
 
 
 
