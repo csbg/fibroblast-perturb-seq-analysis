@@ -288,24 +288,24 @@ walk(
 
 selected_signatures <- tribble(
   ~signature,                     ~type,
+  "Amrute_Fib7",                  "heart failure",
+  "Koenig_Fb7 - CCL2",            "heart failure",
+  "Chaffin_Activated fibroblast", "heart failure",
+  "Amrute_Fib3",                  "heart failure",
+  "Koenig_Fb6 - TNC",             "heart failure",
+  "Fu_FB5",                       "heart failure",
+  "Fu_FB0",                       "heart failure",
+  "Koenig_Fb8 - THBS4",           "heart failure",
+  "Buechler_Lrrc15+",             "heart failure",
+  
+  "Chaffin_FB-CNTNAP2",           "healthy",
+  "Amrute_Fib1",                  "healthy",
+  "Koenig_Fb3 - GPX3",            "healthy",
+  "Chaffin_FB-ZBTB7C",            "healthy",
+  
   "Koenig_Fb1 - Baseline",        "steady state",
   "Buechler_Col15a1+",            "steady state",
   "Buechler_Ccl19+",              "steady state",
-  
-  "Koenig_Fb3 - GPX3",            "healthy",
-  "Amrute_Fib1",                  "healthy",
-  "Chaffin_FB-CNTNAP2",           "healthy",
-  "Chaffin_FB-ZBTB7C",            "healthy",
-  
-  "Koenig_Fb6 - TNC",             "heart failure",
-  "Koenig_Fb7 - CCL2",            "heart failure",
-  "Koenig_Fb8 - THBS4",           "heart failure",
-  "Amrute_Fib3",                  "heart failure",
-  "Amrute_Fib7",                  "heart failure",
-  "Chaffin_Activated fibroblast", "heart failure",
-  "Buechler_Lrrc15+",             "heart failure",
-  "Fu_FB0",                       "heart failure",
-  "Fu_FB5",                       "heart failure"
 ) %>%
   mutate(type = fct_inorder(type))
 
@@ -359,7 +359,8 @@ plot_selected_signatures <- function(data,
     row_title_side = "left",
     
     cluster_rows = FALSE,
-    # cluster_columns = FALSE,
+    cluster_columns = FALSE,
+    cluster_column_slices = FALSE,
     column_split = selected_signatures$type,
     show_parent_dend_line = FALSE,
     
@@ -397,5 +398,5 @@ plot_selected_signatures <- function(data,
                                selected_signatures,
                                # color_limit = 2,
                                row_order = cell_type_order))
-ggsave_default("XX_signatures_selected", plot = p,
+ggsave_default("XX_signatures_selected_no_clustering", plot = p,
                type = "pdf", width = 150)

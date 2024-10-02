@@ -156,7 +156,9 @@ selected_terms <- c(
   "Kuppe_Fib2" 
 )
 
-selected_targets <- unique(gsea_results$group)
+# selected_targets <- unique(gsea_results$group)
+selected_targets <- c("Tgfbr1", "Smad3", "Smad4", "Kat8", "Kansl1",
+                      "Kat5", "Dmap1", "Srcap", "Wdr82", "Hcfc1", "Paxip1")
 
 
 plot_signatures <- function(enriched_terms, terms, targets) {
@@ -172,7 +174,7 @@ plot_signatures <- function(enriched_terms, terms, targets) {
     filter(
       comparison %in% selected_comparisons,
       group %in% targets,
-      pathway %in% terms,
+      # pathway %in% terms,
     ) %>% 
     mutate(
       group = fct_relevel(group, !!!targets),
@@ -224,8 +226,22 @@ plot_signatures <- function(enriched_terms, terms, targets) {
     )
 }
 
-plot_signatures(gsea_results, selected_terms, selected_targets)
-ggsave_default("XX_fibroblast_signatures", type = "pdf", width = 250)
+# plot_signatures(gsea_results, selected_terms, selected_targets)
+
+gsea_results %>% 
+  mutate(
+    pathway =
+      as_factor(pathway) %>% 
+      fct_rev() %>% 
+      fct_relevel(
+        "exvivo_resting",
+        "exvivo_inflammatory",
+        "exvivo_fibrotic"
+      )
+  ) %>% 
+  plot_signatures(selected_terms, selected_targets)
+ggsave_default("XX_fibroblast_signatures_selected_targets", 
+               type = "pdf", width = 120)
 
 gsea_results %>% 
   select(comparison, target = group, signature = pathway, NES, padj) %>% 
