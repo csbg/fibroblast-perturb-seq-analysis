@@ -92,7 +92,7 @@ tibble(
   geom_text_repel(
     aes(label = sample_id),
     size = BASE_TEXT_SIZE_MM,
-    sement.size = BASE_LINEWIDTH,
+    segment.size = BASE_LINEWIDTH,
     seed = 1
   ) +
   xlab(
@@ -156,23 +156,49 @@ ggplot(dge, aes(logFC, -log10(p))) +
   theme_pub()
 ggsave_default("rnaseq/human_volcano", type = "pdf", width = 120, height = 40)
 
+c("IL11", "COMP", "NPR3", "NOX4", "COL7A1", "LRRC15", "TSPAN2", "GAL",
+  "ACKR2", "CILP", "ELN", "PDE4B", "DEPP1", "C7", "SYNE3", "APOL6",
+  "ANKRD33", "SLC14A1", "SCARA5", "CAMK2B", "CHI3L1", "MYOZ2", "LACC1",
+  "ABCA9", "CFB", "ZBTB7C")
+
 plot_volcano <- function() {
-  selected_genes <-
-    tribble(
-      ~gene_mouse, ~type,
-      "Lox", "fibrotic",
-      "Cthrc1", "fibrotic",
-      "Col1a1", "fibrotic",
-      "Acta2", "fibrotic",
-      "Postn", "fibrotic",
-      "Meox1", "fibrotic",
-      "Pdgfra", "antifibrotic",
-      "Mgp", "antifibrotic",
-      "Spon2", "antifibrotic"
-    ) %>% 
-    left_join(gene_map) %>% 
-    filter(!is.na(gene_human))
-  
+  selected_genes <- tribble(
+    ~gene_human, ~type,
+    "ACTA2", "fibrotic",
+    "ABCA9", "antifibrotic",
+    "ACKR3", "fibrotic",
+    "ANKRD33", "antifibrotic",
+    "APOL6", "antifibrotic",
+    "C7", "antifibrotic",
+    "CAMK2B", "antifibrotic",
+    "CFB", "antifibrotic",
+    "CHI3L1", "antifibrotic",
+    "CILP", "fibrotic",
+    "COL1A1", "fibrotic",
+    "COL7A1", "fibrotic",
+    "COMP", "fibrotic",
+    "CTHRC1", "fibrotic",
+    "DEPP1", "antifibrotic",
+    "ELN", "fibrotic",
+    "GAL", "fibrotic",
+    "IL11", "fibrotic",
+    "LACC1", "antifibrotic",
+    "LOX", "fibrotic",
+    "LRRC15", "fibrotic",
+    "MEOX1", "fibrotic",
+    "MYOZ2", "antifibrotic",
+    "NOX4", "fibrotic",
+    "NPR3", "fibrotic",
+    "PDE4B", "fibrotic",
+    "PDGFRA", "antifibrotic",
+    "POSTN", "fibrotic",
+    "SCARA5", "antifibrotic",
+    "SLC14A1", "antifibrotic",
+    "SYNE3", "antifibrotic",
+    "TSPAN2", "fibrotic",
+    "ZBTB7C", "antifibrotic",
+  )
+
   plot_data <- 
     dge %>% 
     filter(comparison != "Kat5i_vs_healthy")
@@ -205,14 +231,22 @@ plot_volcano <- function() {
     ) +
     xlab("log-fold change") +
     ylab("-log10 p-value") +
-    scale_color_manual(values = c(fibrotic = "#363594", antifibrotic = "#218b43")) +
+    scale_color_manual(
+      values = c(
+        fibrotic = "#363594",
+        antifibrotic = "#218b43",
+        quiescent = "#218b43",
+        x = "black"
+      )
+    ) +
     facet_wrap(vars(comparison)) +
     theme_pub() +
     theme(panel.grid = element_blank())
 }
 
 plot_volcano()
-ggsave_default("rnaseq/human_volcano_pub", type = "pdf", width = 80, height = 40)
+ggsave_default("rnaseq/6e_human_volcano_pub", type = "pdf", width = 80, height = 40)
+ggsave_default("rnaseq/6e_human_volcano_pub_large", type = "pdf", width = 160, height = 80)
 
 
 plot_expression_heatmap <- function(genes, samples = NULL) {
@@ -358,49 +392,55 @@ gsea_results %>% save_table("rnaseq_human_gsea")
 
 # Plot GSEA ---------------------------------------------------------------
 
-selected_terms <- tribble(
-  ~db, ~pathway, ~term_display,
-  "MSigDB_Hallmark_2020",
-    "TNF-alpha Signaling via NF-kB",
-    "TNF-alpha Signaling via NF-kB (MSigDB)",
-  "MSigDB_Hallmark_2020",
-    "Inflammatory Response",
-    "Inflammatory Response (MSigDB)",
-  "KEGG_2019_Mouse",
-    "JAK-STAT signaling pathway",
-    "JAK-STAT signaling pathway (KEGG)",
-  "KEGG_2019_Mouse",
-    "Hedgehog signaling pathway",
-    "Hedgehog signaling pathway (KEGG)",
-  "WikiPathways_2019_Mouse",
-    "Striated Muscle Contraction WP216",
-    "Striated Muscle Contraction (WikiPathways)",
-  "MSigDB_Hallmark_2020",
-    "Oxidative Phosphorylation",
-    "Oxidative Phosphorylation (MSigDB)",
-  "Reactome_2022",
-    "Mitochondrial Translation R-HSA-5368287",
-    "Mitochondrial Translation (Reactome)",
-  "WikiPathways_2019_Mouse",
-    "Retinol metabolism WP1259",
-    "Retinol metabolism (WikiPathways)",
-  "MSigDB_Hallmark_2020",
-    "G2-M Checkpoint",
-    "G2-M Checkpoint (MSigDB)"
-) %>% 
-  bind_rows(
-    tibble(
-      db = "fibroblast_markers",
-      pathway = names(enrichr_genesets$fibroblast_markers)
-    ) %>% 
-      mutate(term_display = str_replace(pathway, "(.+?)_(.+)", "\\2 (\\1)"))
+selected_terms <- bind_rows(
+  tibble(
+    db = "fibroblast_markers",
+    pathway = names(enrichr_genesets$fibroblast_markers)
+  ) %>% 
+    mutate(term_display = str_replace(pathway, "(.+?)_(.+)", "\\2 (\\1)")),
+  tribble(
+    ~db, ~pathway, ~term_display,
+    "KEGG_2019_Mouse",
+      "JAK-STAT signaling pathway",
+      "JAK-STAT signaling pathway (KEGG)",
+    "KEGG_2019_Mouse",
+      "Hedgehog signaling pathway",
+      "Hedgehog signaling pathway (KEGG)",
+    "MSigDB_Hallmark_2020",
+      "TNF-alpha Signaling via NF-kB",
+      "TNF-alpha Signaling via NF-kB (MSigDB)",
+    "MSigDB_Hallmark_2020",
+      "Inflammatory Response",
+      "Inflammatory Response (MSigDB)",
+    "MSigDB_Hallmark_2020",
+      "Oxidative Phosphorylation",
+      "Oxidative Phosphorylation (MSigDB)",
+    "MSigDB_Hallmark_2020",
+      "G2-M Checkpoint",
+      "G2-M Checkpoint (MSigDB)",
+    "Reactome_2022",
+      "Mitochondrial Translation R-HSA-5368287",
+      "Mitochondrial Translation (Reactome)",
+    "WikiPathways_2019_Mouse",
+      "Retinol metabolism WP1259",
+      "Retinol metabolism (WikiPathways)",
+    "WikiPathways_2019_Mouse",
+      "Striated Muscle Contraction WP216",
+      "Striated Muscle Contraction (WikiPathways)",
   )
+)
 
 
 plot_terms <- function(terms) {
   terms <- 
     terms %>% 
-    mutate(term_display = as_factor(term_display))
+    left_join(selected_terms, by = join_by(pathway)) %>% 
+    mutate(
+      term_display =
+        factor(term_display) %>%
+        fct_inorder() %>%
+        fct_rev()
+    )
   
   # prepare data
   data_vis <- 
@@ -448,18 +488,15 @@ plot_terms <- function(terms) {
     )
 }
 
-plot_terms(selected_terms)
-ggsave_default("rnaseq/human_gsea", type = "pdf", width = 70)
-
-
-terms_for_main_fig <- c(
-  "Oxidative Phosphorylation",
-  "Mitochondrial Translation R-HSA-5368287",
-  "G2-M Checkpoint",
+terms_for_main_fig <- tribble(
+  ~pathway,
   "Amrute_Fib1",
   "Amrute_Fib3",
   "Amrute_Fib5",
+  "Chaffin_FB-ZBTB7C",
+  "Chaffin_FB-CNTNAP2",
   "Chaffin_Activated fibroblast",
+  "Fu_FB0",
   "Fu_FB2",
   "Fu_FB3",
   "Koenig_Fb1 - Baseline",
@@ -469,26 +506,39 @@ terms_for_main_fig <- c(
   "Kuppe_Fib2",
   "Kuppe_Fib3",
   "Kuppe_Fib4",
-  "Buechler_Cxcl5+",
-  "Buechler_Lrrc15+"
 )
+plot_terms(terms_for_main_fig)
+ggsave_default("rnaseq/6f_human_gsea_pub_main_fig", type = "pdf", height = 65)
 
-selected_terms %>% 
-  filter(pathway %in% terms_for_main_fig) %>% 
-  mutate(
-    term_display =
-      factor(term_display) %>%
-      fct_inorder() %>%
-      fct_rev()
-  ) %>% 
-  plot_terms()
-ggsave_default("rnaseq/human_gsea_pub_main_fig", type = "pdf", width = 62)
 
-selected_terms %>% 
-  filter(!pathway %in% terms_for_main_fig) %>% 
-  plot_terms()
-ggsave_default("rnaseq/human_gsea_pub_supp_fig", type = "pdf", width = 66)
-
+terms_for_supp_fig <- tribble(
+  ~pathway,
+  "Amrute_Fib2",
+  "Amrute_Fib4",
+  "Amrute_Fib6",
+  "Amrute_Fib7",
+  "Amrute_Fib8",
+  "Chaffin_FB-TLL2",
+  "Chaffin_FB-X1",
+  "Chaffin_FB-PTCHD4",
+  "Fu_FB1",
+  "Fu_FB4",
+  "Fu_FB5",
+  "Fu_FB6",
+  "Koenig_Epicardium",
+  "Koenig_Fb2 - PCOLCE2",
+  "Koenig_Fb3 - GPX3",
+  "Koenig_Fb4 - PLA2G2A",
+  "Koenig_Fb5 - ELN",
+  "Koenig_Fb7 - CCL2",
+  "Kuppe_Fib1",
+  # "JAK-STAT signaling pathway",
+  # "Hedgehog signaling pathway",
+  # "TNF-alpha Signaling via NF-kB",
+  # "Inflammatory Response",
+)
+plot_terms(terms_for_supp_fig)
+ggsave_default("rnaseq/S10g_human_gsea_pub_supp_fig", type = "pdf", width = 51)
 
 
 

@@ -237,15 +237,15 @@ plot_signature_heatmap <- function(data,
     name = "Mean signature",
     heatmap_legend_param = list(
       at = round(c(-color_limit, 0, color_limit), 2),
-      direction = "horizontal",
+      direction = "vertical",
       grid_height = unit(2, "mm"),
       legend_width = unit(10, "mm")
     ),
     
-    row_names_side = "left",
+    row_names_side = "right",
     row_title = "cell type",
-    row_title_side = "left",
-    cluster_rows = FALSE,
+    row_title_side = "right",
+    cluster_rows = TRUE,
 
     column_title = glue::glue("Population signatures ({ref})",
                               .null = "all references"),
@@ -258,13 +258,13 @@ plot_signature_heatmap <- function(data,
 
 (p <- plot_signature_heatmap(plot_data_sig, "Forte",
                              color_limit = 2, row_order = cell_type_order))
-ggsave_default("3f_signatures_Forte", plot = p)
+ggsave_default("S2_signatures_Forte", plot = p)
 
 (p <- plot_signature_heatmap(plot_data_sig, "Buechler"))
-ggsave_default("S3_signatures_Buechler", plot = p)
+ggsave_default("S2_signatures_Buechler", plot = p)
 
 (p <- plot_signature_heatmap(plot_data_sig, "Koenig"))
-ggsave_default("S3_signatures_Koenig", plot = p)
+ggsave_default("S2_signatures_Koenig", plot = p)
 
 
 (p <-
@@ -285,29 +285,31 @@ walk(
 
 
 ## Selected signatures ----
-
+colnames(signatures)
 selected_signatures <- tribble(
-  ~signature,                     ~type,
-  "Amrute_Fib7",                  "heart failure",
-  "Koenig_Fb7 - CCL2",            "heart failure",
-  "Chaffin_Activated fibroblast", "heart failure",
-  "Amrute_Fib3",                  "heart failure",
-  "Koenig_Fb6 - TNC",             "heart failure",
-  "Fu_FB5",                       "heart failure",
-  "Fu_FB0",                       "heart failure",
-  "Koenig_Fb8 - THBS4",           "heart failure",
-  "Buechler_Lrrc15+",             "heart failure",
+  ~signature,                     ~type,           ~display,
+  "Fu_FB5",                       "heart failure", "Fu-FB5-ACTA2+",
+  "Chaffin_Activated fibroblast", "heart failure", "Chaffin-Activated-Fib",
+  "Kuppe_Fib2",                   "heart failure", "Kuppe-Fib2-POSTN+TNC+",
+  "Amrute_Fib3",                  "heart failure", "Amrute-Fib3-POSTN+",
+  "Koenig_Fb6 - TNC",             "heart failure", "Koenig-Fb6-TNC+",
+  "Koenig_Fb9 - SERPINE1",        "heart failure", "Koenig-Fb9-SERPINE1+",
   
-  "Chaffin_FB-CNTNAP2",           "healthy",
-  "Amrute_Fib1",                  "healthy",
-  "Koenig_Fb3 - GPX3",            "healthy",
-  "Chaffin_FB-ZBTB7C",            "healthy",
+  "Fu_FB1",                       "healthy",       "Fu-FB1-PLA2G2A+",
+  "Fu_FB3",                       "healthy",       "Fu-FB3-PTGDS+",
+  "Chaffin_FB-ZBTB7C",            "healthy",       "Chaffin-FB-ZBTB7C+",
+  "Chaffin_FB-CNTNAP2",           "healthy",       "Chaffin-FB-CNTNAP2+",
+  "Kuppe_Fib3",                   "healthy",       "Kuppe-Fib3",
+  "Amrute_Fib1",                  "healthy",       "Amrute-Fib1-SCN7A+",
+  "Koenig_Fb1 - Baseline",        "healthy",       "Koenig-Fb1-Basline",
+  "Koenig_Fb3 - GPX3",            "healthy",       "Koenig-Fb3-GPX3+",
   
-  "Koenig_Fb1 - Baseline",        "steady state",
-  "Buechler_Col15a1+",            "steady state",
-  "Buechler_Ccl19+",              "steady state",
+  "Amrute_Fib5",                  "inflammatory",  "Amrute-Fib5",
 ) %>%
-  mutate(type = fct_inorder(type))
+  mutate(
+    type = fct_inorder(type),
+    display = coalesce(display, signature)
+  )
 
 
 plot_selected_signatures <- function(data,
@@ -334,6 +336,12 @@ plot_selected_signatures <- function(data,
     str_remove(col_prefix)
   mat <- mat[, selected_signatures$signature]
   
+  colnames(mat) <- 
+    selected_signatures %>% 
+    select(signature, display) %>% 
+    deframe() %>% 
+    magrittr::extract(colnames(mat))
+  
   if (!is.null(row_order))
     mat <- mat[row_order, ]
   
@@ -359,8 +367,8 @@ plot_selected_signatures <- function(data,
     row_title_side = "left",
     
     cluster_rows = FALSE,
-    cluster_columns = FALSE,
-    cluster_column_slices = FALSE,
+    cluster_columns = TRUE,
+    cluster_column_slices = TRUE,
     column_split = selected_signatures$type,
     show_parent_dend_line = FALSE,
     
@@ -372,7 +380,8 @@ plot_selected_signatures <- function(data,
       col = list(type = c(
         "heart failure" = "red",
         "healthy" = "green",
-        "steady state" = "gray"
+        "steady state" = "gray",
+        "inflammatory" = "blue"
       )),
       show_annotation_name = FALSE,
       show_legend = FALSE,
@@ -398,5 +407,5 @@ plot_selected_signatures <- function(data,
                                selected_signatures,
                                # color_limit = 2,
                                row_order = cell_type_order))
-ggsave_default("XX_signatures_selected_no_clustering", plot = p,
+ggsave_default("6b_signatures_selected_with_Amrute-Fib5", plot = p,
                type = "pdf", width = 150)

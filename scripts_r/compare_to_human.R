@@ -137,47 +137,31 @@ gsea_results <-
 
 # Plots -------------------------------------------------------------------
 
-# gsea_results %>% 
-#   ggplot(aes(NES, -log10(padj))) +
-#   geom_point()
-
-
-selected_terms <- c(
-  "Amrute_Fib1", # healthy
-  "Amrute_Fib3", # like myofibroblasts
-  "Amrute_Fib7", # matrifibrocytes or deactivated myofibroblasts
-  "Chaffin_Activated fibroblast", 
-  "Fu_FB0", 
-  "Fu_FB5", 
-  "Koenig_Fb5 - ELN", 
-  "Koenig_Fb7 - CCL2", 
-  "Koenig_Fb8 - THBS4", 
-  "Kuppe_Fib1", # healthy
-  "Kuppe_Fib2" 
-)
-
-# selected_targets <- unique(gsea_results$group)
-selected_targets <- c("Tgfbr1", "Smad3", "Smad4", "Kat8", "Kansl1",
-                      "Kat5", "Dmap1", "Srcap", "Wdr82", "Hcfc1", "Paxip1")
-
-
-plot_signatures <- function(enriched_terms, terms, targets) {
+plot_signatures <- function(enriched_terms) {
   selected_comparisons <- c(
     "Resting" = "Resting_Target_vs_NTC",
     "Tgfb1" = "Tgfb1_Target_vs_NTC",
     "Il1b" = "Il1b_Target_vs_NTC"
   )
   
+  selected_targets <- c("Tgfbr1", "Smad3", "Smad4", "Kat8", "Kansl1",
+                        "Kat5", "Dmap1", "Srcap", "Wdr82", "Hcfc1", "Paxip1")
+  
+  selected_terms <-
+    c("Amrute", "Chaffin", "Fu", "Koenig", "Kuppe") %>% 
+    str_flatten("|")
+  
   # prepare data
   data_vis <- 
     enriched_terms %>% 
     filter(
       comparison %in% selected_comparisons,
-      group %in% targets,
-      # pathway %in% terms,
+      group %in% selected_targets,
+      str_starts(pathway, selected_terms),
+      pathway != "Fu_FB7"
     ) %>% 
     mutate(
-      group = fct_relevel(group, !!!targets),
+      group = fct_relevel(group, !!!selected_targets),
       comparison = 
         comparison %>% 
         fct_recode(!!!selected_comparisons) %>% 
@@ -226,8 +210,6 @@ plot_signatures <- function(enriched_terms, terms, targets) {
     )
 }
 
-# plot_signatures(gsea_results, selected_terms, selected_targets)
-
 gsea_results %>% 
   mutate(
     pathway =
@@ -239,9 +221,9 @@ gsea_results %>%
         "exvivo_fibrotic"
       )
   ) %>% 
-  plot_signatures(selected_terms, selected_targets)
-ggsave_default("XX_fibroblast_signatures_selected_targets", 
-               type = "pdf", width = 120)
+  plot_signatures()
+ggsave_default("S10a_fibroblast_signatures_selected_targets", 
+               type = "pdf", width = 130)
 
 gsea_results %>% 
   select(comparison, target = group, signature = pathway, NES, padj) %>% 
