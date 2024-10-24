@@ -26,6 +26,10 @@ Create a folder `data_raw` that will contain raw data in the following subfolder
   - `markers_Forte.xlsx`: Table S3 from Forte et al (https://doi.org/10.1016/j.celrep.2020.02.008)
   - `markers_Koenig.xlsx`: Table S27 from Koenig et al (https://doi.org/10.1038/s44161-022-00028-6)
   - `markers_Buechler.xlsx`: Table S5 from Buechler et al (https://doi.org/10.1038/s41586-021-03549-5)
+  - `signatures_Amrute.xlsx`: Table S10 from Amrute et al (https://doi.org/10.1038/s44161-023-00260-8)
+  - `signatures_Chaffin.xlsx`: Table S11 from Chaffin et al (https://doi.org/10.1038/s41586-022-04817-8)
+  - `signatures_Fu.xlsx`: Additional File 6 from Fu et al (https://doi.org/10.1186/s12916-023-03232-8)
+  - `signatures_Kuppe.xlsx`: Table S13 from Kuppe et al (https://doi.org/10.1038/s41586-022-05060-x)
 
 Optionally, obtain intermediary data: Extract the contents of `data_generated.tgz` from Zenodo repository https://doi.org/XXX to folder `data_generated`.
 
