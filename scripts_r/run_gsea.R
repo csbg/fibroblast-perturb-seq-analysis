@@ -19,70 +19,12 @@ gene_map <-
   select(human_gene = `Human gene name`, mouse_gene = `Gene name`) %>% 
   distinct()
 
+enrichr_genesets <- read_rds("data_generated/enrichr_genesets_mouse.rds")
+
 
 
 # Perform enrichment ------------------------------------------------------
 
-enrichr_databases <- c(
-  # pathways
-  "KEGG_2019_Mouse",
-  "MSigDB_Hallmark_2020",
-  "NCI-Nature_2016",
-  "Reactome_2022",
-  "WikiPathways_2019_Mouse",
-  
-  # transcription factor targets
-  "ChEA_2022",
-  "ENCODE_and_ChEA_Consensus_TFs_from_ChIP-X",
-  "ENCODE_TF_ChIP-seq_2015",
-  "TRANSFAC_and_JASPAR_PWMs",
-  "TRRUST_Transcription_Factors_2019"
-)
-
-# download Enrichr databases in a format that can be used by fgsea:
-# assemble a named list (names = databases)
-#   of named lists (names = enrichment terms)
-#   of character vectors (all genes associated with the respective term).
-enrichr_genesets <-
-  enrichr_databases %>% 
-  set_names() %>% 
-  map(\(db) {
-    info("Downloading {db}")
-    url <- paste0(
-      "https://maayanlab.cloud/Enrichr/geneSetLibrary",
-      "?mode=text&libraryName=",
-      db
-    )
-    db <- read_lines(url)
-    m <- str_match(db, "(.+?)\\t\\t(.+)")
-    terms <- m[, 2]
-    genes <- m[, 3] %>% str_split("\\t")
-    genes %>% 
-      map(stringi::stri_remove_empty) %>% 
-      set_names(terms)
-  })
-
-# remove human gene sets from TRRUST database
-enrichr_genesets$TRRUST_Transcription_Factors_2019 <-
-  enrichr_genesets$TRRUST_Transcription_Factors_2019 %>% 
-  magrittr::extract(imap_lgl(., ~str_detect(.y, "mouse"))) %>% 
-  set_names(str_extract, "\\w+")
-
-# convert human to mouse genes
-enrichr_genesets <- 
-  enrichr_genesets %>% 
-  modify(\(db) {
-    modify(db, \(gene_set) {
-      gene_map %>% 
-        filter(human_gene %in% gene_set) %>% 
-        pull(mouse_gene) %>% 
-        unique()   
-    })
-  })
-
-
-
-# perform gene set enrichment analysis;
 # returns dataframe, comprising columns "db", "comparison", "group",
 # as well as all columns in the result of fgsea().
 run_gsea <- function(comparison, group, db) {
@@ -93,9 +35,6 @@ run_gsea <- function(comparison, group, db) {
     select(gene, logFC) %>%
     deframe()
   ranked_genes <- ranked_genes[!is.na(ranked_genes)]
-  
-  # info("GSEA of comparison {comparison}, group {group}, ",
-  #      "db {db} ({length(ranked_genes)} genes)")
   
   fgsea(
     enrichr_genesets[[db]],
@@ -111,8 +50,6 @@ run_gsea <- function(comparison, group, db) {
     )
 }
 
-# run_gsea("Il1b_Target_vs_NTC", "Arid2", "KEGG_2019_Mouse")  # for testing
-
 
 gsea_results <-
   expand_grid(
@@ -120,7 +57,6 @@ gsea_results <-
     group = unique(dge$group),
     db = names(enrichr_genesets)
   ) %>% 
-  # head(5) %>%
   pmap(run_gsea, .progress = TRUE) %>% 
   list_rbind()
 

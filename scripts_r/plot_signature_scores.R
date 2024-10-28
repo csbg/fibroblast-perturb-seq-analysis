@@ -59,56 +59,19 @@ calculate_signatures <- function(markers) {
 }
 
 
-
-# selected_terms <- tribble(
-#   ~ref, ~cluster,
-#   "Amrute", "Fib1", 
-#   "Amrute", "Fib3", 
-#   "Amrute", "Fib7", 
-#   "Chaffin", "Activated fibroblast", 
-#   "Fu", "FB0", 
-#   "Fu", "FB5", 
-#   "Koenig", "Fb5 - ELN", 
-#   "Koenig", "Fb7 - CCL2", 
-#   "Koenig", "Fb8 - THBS4", 
-#   "Kuppe", "Fib1",
-#   "Kuppe", "Fib2",
-#   "exvivo", "resting",
-#   "exvivo", "fibrotic",
-#   "exvivo", "inflammatory"
-# )
-
 ignored_terms <- tribble(
   ~ref, ~cluster,
   "Amrute", "Fib4",
 )
 
+signatures <-
+  markers %>%
+  anti_join(ignored_terms, by = join_by(ref, cluster)) %>% 
+  calculate_signatures()
 
-# signatures <- calculate_signatures(markers)
-# signatures <- calculate_signatures(markers %>% semi_join(selected_terms))
-signatures <- calculate_signatures(markers %>% anti_join(ignored_terms))
 
 
 # Plots -------------------------------------------------------------------
-
-## UMAP ----
-
-colData(sce) %>%
-  as_tibble() %>% 
-  ggplot(aes(UMAP_X, UMAP_Y)) +
-  geom_point(aes(color = cell_type), size = 0.01) +
-  coord_fixed() +
-  theme_pub() +
-  theme(
-    legend.key.height = unit(2, "mm"),
-    legend.key.width = unit(2, "mm"),
-    panel.grid = element_blank()
-  )
-# ggsave_default("umap_cell_types", height = 120, width = 120)
-
-
-
-## Signatures ----
 
 plot_data_sig <- 
   colData(sce) %>% 
@@ -117,8 +80,9 @@ plot_data_sig <-
   mutate(across(starts_with("signature"), ~ scale(.x)[,1]))
 
 
+## Signature hexplots ----
 
-plot_signature <- function(ref, signatures = NULL, ncol = NULL) {
+plot_signature_hexplot <- function(ref, signatures = NULL, ncol = NULL) {
   col_prefix <- str_c("signature_", ref, "_")
   
   plot_data <- 
@@ -159,35 +123,23 @@ plot_signature <- function(ref, signatures = NULL, ncol = NULL) {
       axis.text = element_blank(),
       axis.ticks = element_blank(),
       axis.title = element_blank(),
-      # legend.direction = "vertical",
-      # legend.key.height = unit(3, "mm"),
-      # legend.key.width = unit(3, "mm"),
       legend.position = "bottom",
       legend.margin = margin(),
       panel.grid = element_blank()
     )
 }
 
-plot_signature(
-  "Forte",
-  signatures = c("Homeostatic Epicardial Derived", "Myofibroblasts"),
-  ncol = 1
-)
-ggsave_default("3g_signature_umaps", type = "pdf", width = 40, height = 70)
+# plot_signature_hexplot(
+#   "Forte",
+#   signatures = c("Homeostatic Epicardial Derived", "Myofibroblasts"),
+#   ncol = 1
+# )
+# 
+# plot_signature_hexplot("Forte")
+# plot_signature_hexplot("Buechler")
 
 
-plot_signature("Buechler")
-# ggsave_default("umap_signature_Buechler", width = 150, type = "pdf")
-
-plot_signature("Koenig")
-# ggsave_default("umap_signature_Koenig", width = 150, type = "pdf")
-
-plot_signature("Forte")
-# ggsave_default("umap_signature_Forte", width = 150, type = "pdf")
-
-
-
-## Signature summary ----
+## Murine signature heatmaps ----
 
 cell_type_order <- c(
   "Quiescent",
@@ -203,7 +155,7 @@ cell_type_order <- c(
   "Proliferative myofibroblast"
 )
 
-plot_signature_heatmap <- function(data,
+plot_murine_signatures <- function(data,
                                    ref = NULL,
                                    color_limit = NULL,
                                    row_order = NULL) {
@@ -256,36 +208,16 @@ plot_signature_heatmap <- function(data,
   )
 }
 
-(p <- plot_signature_heatmap(plot_data_sig, "Forte",
+(p <- plot_murine_signatures(plot_data_sig, "Forte",
                              color_limit = 2, row_order = cell_type_order))
-ggsave_default("S2_signatures_Forte", plot = p)
+ggsave_default("S2c_signatures_Forte", plot = p)
 
-(p <- plot_signature_heatmap(plot_data_sig, "Buechler"))
-ggsave_default("S2_signatures_Buechler", plot = p)
-
-(p <- plot_signature_heatmap(plot_data_sig, "Koenig"))
-ggsave_default("S2_signatures_Koenig", plot = p)
+(p <- plot_murine_signatures(plot_data_sig, "Buechler"))
+ggsave_default("S2d_signatures_Buechler", plot = p)
 
 
-(p <-
-    plot_data_sig %>%
-    select(!contains(c("Buechler", "Forte"))) %>%
-    plot_signature_heatmap(color_limit = 2, row_order = cell_type_order))
-ggsave_default("XX_signatures_all", plot = p)
+## Human signature heatmaps ----
 
-walk(
-  unique(markers$ref),
-  \(ref) {
-    p <- plot_signature_heatmap(plot_data_sig, ref = ref, color_limit = 2,
-                                row_order = cell_type_order)
-    ggsave_default(str_glue("XX_signatures_{ref}"), plot = p)
-  }
-)
-
-
-
-## Selected signatures ----
-colnames(signatures)
 selected_signatures <- tribble(
   ~signature,                     ~type,           ~display,
   "Fu_FB5",                       "heart failure", "Fu-FB5-ACTA2+",
@@ -312,10 +244,10 @@ selected_signatures <- tribble(
   )
 
 
-plot_selected_signatures <- function(data,
-                                     selected_signatures,
-                                     color_limit = NULL,
-                                     row_order = NULL) {
+plot_human_signatures <- function(data,
+                                  selected_signatures,
+                                  color_limit = NULL,
+                                  row_order = NULL) {
   data <-
     data %>%
     select(cell_type, contains(selected_signatures$signature))
@@ -403,9 +335,7 @@ plot_selected_signatures <- function(data,
 }
 
 
-(p <- plot_selected_signatures(plot_data_sig,
-                               selected_signatures,
-                               # color_limit = 2,
-                               row_order = cell_type_order))
-ggsave_default("6b_signatures_selected_with_Amrute-Fib5", plot = p,
-               type = "pdf", width = 150)
+(p <- plot_human_signatures(plot_data_sig,
+                            selected_signatures,
+                            row_order = cell_type_order))
+ggsave_default("6b_signatures_human", plot = p, type = "pdf", width = 150)

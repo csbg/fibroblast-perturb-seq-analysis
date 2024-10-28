@@ -121,21 +121,17 @@ test_results %>%
     legend.key.width = unit(2, "mm"),
     panel.grid = element_blank()
   )
-# ggsave_default("ko_enrichment_details", type = "pdf", height = 300, width = 220)
 
 
 
-## Summary ----
+## Summary, selected clusters ----
 
 selected_targets <- c(
-  "Tgfbr1", "Smad2", "Smad3", "Smad4", "Chd4", "Kat5", "Dmap1", "Yeats4",
-  "Srcap", "Znhit1", "Ino80", "Tfpt", "Smarca4", "Smarcd1", "Brd9", "Brd7",
-  "Arid2", "Pbrm1", "Kat8", "Kansl1", "Hcfc1", "Wdr82", "Paxip1", "Kmt2a",
-  "Setd1b", "Setdb1", "Egr2", "Rest", "Yy1", "Rnf40"
+  "Tgfbr1", "Smad3", "Smad4", "Wdr82", "Hcfc1", "Srcap", "Znhit1",
+  "Yeats4", "Dmap1","Kat5", "Ino80", "Tfpt", "Chd4", "Smarca4",
+  "Smarcd1", "Brd9", "Brd7", "Arid2", "Pbrm1", "Kat8", "Kansl1",
+  "Paxip1", "Setd1b", "Egr2", "Rest", "Yy1", "Rnf40"
 )
-
-
-### different y-axes ----
 
 clusters_resting <- c(
   "Quiescent",
@@ -252,12 +248,19 @@ wrap_plots(
   ncol = 1,
   guides = "collect"
 )
-ggsave_default("4b_ko_enrichment_summary", type = "pdf", width = 130)
+ggsave_default("2g_ko_enrichment_summary", type = "pdf", width = 130)
 
 
-### same y-axes ----
+## Summary, all clusters ----
 
-selected_clusters <- c(
+target_order <- c(
+  "Tgfbr1", "Smad2", "Smad3", "Smad4", "Chd4", "Kat5", "Dmap1", "Yeats4",
+  "Srcap", "Znhit1", "Ino80", "Tfpt", "Smarca4", "Smarcd1", "Brd9", "Brd7",
+  "Arid2", "Pbrm1", "Kat8", "Kansl1", "Hcfc1", "Wdr82", "Paxip1", "Kmt2a",
+  "Setd1b", "Setdb1", "Egr2", "Rest", "Yy1", "Rnf40"
+)
+
+cluster_order <- c(
   "Quiescent",
   "Transitory",
   "Stress-fiber fibroblasts",
@@ -319,7 +322,7 @@ plot_summary_all <- function(target_order = NULL, cluster_order = NULL) {
 }
 
 plot_summary_all(
-  target_order = selected_targets,
-  cluster_order = selected_clusters
+  target_order = target_order,
+  cluster_order = cluster_order
 )
-ggsave_default("S7_ko_enrichment_summary_all", type = "pdf", width = 130)
+ggsave_default("S6a_ko_enrichment_summary_all", type = "pdf", width = 130)

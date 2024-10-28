@@ -32,7 +32,7 @@ markers <-
     .id = "ref",
     
     Amrute =
-      read_xlsx("data_raw/signatures/signatures_Amrute.xlsx", sheet = 1, skip = 1) %>% 
+      read_xlsx("data_raw/signatures/Amrute.xlsx", sheet = 1, skip = 1) %>% 
       select(
         cluster,
         human_gene = ...1,
@@ -41,7 +41,7 @@ markers <-
       ),
     
     Chaffin =
-      read_xlsx("data_raw/signatures/signatures_Chaffin.xlsx", sheet = 1) %>% 
+      read_xlsx("data_raw/signatures/Chaffin.xlsx", sheet = 1) %>% 
       select(
         cluster = `Sub-Cluster`,
         human_gene = Gene,
@@ -50,7 +50,7 @@ markers <-
       ),
     
     Fu =
-      read_xlsx("data_raw/signatures/signatures_Fu.xlsx", sheet = 1) %>% 
+      read_xlsx("data_raw/signatures/Fu.xlsx", sheet = 1) %>% 
       select(
         cluster,
         human_gene = gene,
@@ -59,7 +59,7 @@ markers <-
       ),
     
     Koenig = 
-      read_xlsx("data_raw/signatures/markers_Koenig.xlsx", sheet = 3) %>% 
+      read_xlsx("data_raw/signatures/Koenig.xlsx", sheet = 3) %>% 
       select(
         cluster,
         human_gene = gene,
@@ -70,7 +70,7 @@ markers <-
     Kuppe =
       c("Fib1", "Fib2", "Fib3", "Fib4") %>% 
       set_names() %>% 
-      map(\(s) read_xlsx("data_raw/signatures/signatures_Kuppe.xlsx", sheet = s)) %>% 
+      map(\(s) read_xlsx("data_raw/signatures/Kuppe.xlsx", sheet = s)) %>% 
       list_rbind(names_to = "cluster") %>% 
       select(
         cluster, 
@@ -89,7 +89,9 @@ markers <-
     p_adj < 0.01,
     !is.na(gene)
   ) %>% 
-  bind_rows(read_csv("data_raw/signatures/markers_murine.csv", comment = "#"))
+  bind_rows(
+    read_csv("data_raw/signatures/murine_fibroblasts.csv", comment = "#")
+  )
 
 
 
@@ -166,7 +168,8 @@ plot_signatures <- function(enriched_terms) {
         comparison %>% 
         fct_recode(!!!selected_comparisons) %>% 
         fct_relevel(!!!names(selected_comparisons))
-    )
+    ) %>% 
+    replace_na(list(NES = 0, padj = 1))
   
   # set limits for colorbar
   color_limit <- max(abs(data_vis$NES), na.rm = TRUE)
@@ -214,18 +217,13 @@ gsea_results %>%
   mutate(
     pathway =
       as_factor(pathway) %>% 
-      fct_rev() %>% 
-      fct_relevel(
-        "exvivo_resting",
-        "exvivo_inflammatory",
-        "exvivo_fibrotic"
-      )
+      fct_rev()
   ) %>% 
   plot_signatures()
 ggsave_default("S10a_fibroblast_signatures_selected_targets", 
                type = "pdf", width = 130)
 
-gsea_results %>% 
-  select(comparison, target = group, signature = pathway, NES, padj) %>% 
-  {split(., .$comparison)} %>% 
-  save_table("fib_signatures")
+# gsea_results %>% 
+#   select(comparison, target = group, signature = pathway, NES, padj) %>% 
+#   {split(., .$comparison)} %>% 
+#   save_table("fib_signatures")

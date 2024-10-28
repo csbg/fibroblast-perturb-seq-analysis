@@ -31,7 +31,7 @@ markers_human <-
     .id = "ref",
     
     Amrute =
-      read_xlsx("data_raw/signatures/signatures_Amrute.xlsx", sheet = 1, skip = 1) %>% 
+      read_xlsx("data_raw/signatures/Amrute.xlsx", sheet = 1, skip = 1) %>% 
       select(
         cluster,
         gene_human = ...1,
@@ -40,7 +40,7 @@ markers_human <-
       ),
     
     Chaffin =
-      read_xlsx("data_raw/signatures/signatures_Chaffin.xlsx", sheet = 1) %>% 
+      read_xlsx("data_raw/signatures/Chaffin.xlsx", sheet = 1) %>% 
       select(
         cluster = `Sub-Cluster`,
         gene_human = Gene,
@@ -49,7 +49,7 @@ markers_human <-
       ),
     
     Fu =
-      read_xlsx("data_raw/signatures/signatures_Fu.xlsx", sheet = 1) %>% 
+      read_xlsx("data_raw/signatures/Fu.xlsx", sheet = 1) %>% 
       select(
         cluster,
         gene_human = gene,
@@ -58,7 +58,7 @@ markers_human <-
       ),
     
     Koenig = 
-      read_xlsx("data_raw/signatures/markers_Koenig.xlsx", sheet = 3) %>% 
+      read_xlsx("data_raw/signatures/Koenig.xlsx", sheet = 3) %>% 
       select(
         cluster,
         gene_human = gene,
@@ -69,7 +69,7 @@ markers_human <-
     Kuppe =
       c("Fib1", "Fib2", "Fib3", "Fib4") %>% 
       set_names() %>% 
-      map(\(s) read_xlsx("data_raw/signatures/signatures_Kuppe.xlsx", sheet = s)) %>% 
+      map(\(s) read_xlsx("data_raw/signatures/Kuppe.xlsx", sheet = s)) %>% 
       list_rbind(names_to = "cluster") %>% 
       select(
         cluster, 
@@ -92,7 +92,7 @@ markers_mouse <-
     Buechler = 
       map(
         1:10,
-        \(s) read_xlsx("data_raw/signatures/markers_Buechler.xlsx", sheet = s)
+        \(s) read_xlsx("data_raw/signatures/Buechler.xlsx", sheet = s)
       ) %>% 
       list_rbind() %>% 
       select(
@@ -107,7 +107,7 @@ markers_mouse <-
     Forte =
       map(
         1:11,
-        \(s) read_xlsx("data_raw/signatures/markers_Forte.xlsx", sheet = s)
+        \(s) read_xlsx("data_raw/signatures/Forte.xlsx", sheet = s)
       ) %>% 
       list_rbind() %>%
       select(
@@ -125,7 +125,7 @@ markers_mouse <-
   )
 
 markers_own <- 
-  read_csv("data_raw/signatures/markers_murine.csv", comment = "#") %>% 
+  read_csv("data_raw/signatures/murine_fibroblasts.csv", comment = "#") %>% 
   left_join(
     gene_map,
     by = "gene_mouse",

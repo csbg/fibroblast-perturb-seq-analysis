@@ -1,0 +1,13 @@
+# title: bulk RNA-seq metadata
+# date: 2024-08-20
+# columns:
+#   sample: sample name in count tables
+#   patient: patient ID
+#   condition: controls, TGFb stimulation, or treatment with Kat5 inhibitor
+sample,patient,condition
+Kat5_pos_1_2015_S15,patient1,Kat5i
+Kat5_pos_2017_S18,patient2,Kat5i
+Mock_neg_1_2015_S13,patient1,healthy
+Mock_neg_2017_S16,patient2,healthy
+Mock_pos_1_2015_S14,patient1,TGFb
+Mock_pos_2017_S17,patient2,TGFb

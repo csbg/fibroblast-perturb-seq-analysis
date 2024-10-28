@@ -75,7 +75,7 @@ wrap_plots(
   design = "#B\nCD\nEF",
   guides = "collect"
 ) & theme(legend.position = "bottom")
-ggsave_default("4a_umap_ko_distribution", type = "pdf", width = 60)
+ggsave_default("2f_umap_ko_distribution", type = "pdf", width = 60)
 
 
 wrap_plots(
@@ -83,4 +83,4 @@ wrap_plots(
   nrow = 6,
   guides = "collect"
 )
-ggsave_default("S6_umap_ko_distribution", type = "pdf")
+ggsave_default("S5_umap_ko_distribution", type = "pdf")

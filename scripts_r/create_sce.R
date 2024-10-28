@@ -11,7 +11,7 @@ library(fs)
 ## Raw data ----
 
 samples <-
-  read_csv("metadata/samples.csv") %>% 
+  read_csv("metadata/samples_sc_rnaseq.csv") %>% 
   mutate(path = str_glue("data_raw/rna/{name_orig}/outs/raw_feature_bc_matrix"))
 
 sce <-

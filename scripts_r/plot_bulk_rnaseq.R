@@ -31,11 +31,19 @@ gene_map <-
   select(gene_human = `Human gene name`, gene_mouse = `Gene name`) %>% 
   distinct()
 
-counts_raw <- read_tsv("data_raw/rna-seq/DataRaw_human.txt")
-samples <-
-  read_csv("data_raw/rna-seq/sample_data.csv", comment = "#") %>% 
-  filter(organism == "human")
+enrichr_genesets <- read_rds("data_generated/enrichr_genesets_human.rds")
+enrichr_genesets$fibroblast_markers <-
+  read_rds("data_generated/fibroblast_markers.rds") %>% 
+  summarise(.by = c(ref, cluster), genes = list(gene_human)) %>% 
+  unite(ref, cluster, col = db) %>% 
+  deframe()
 
+counts_raw <- read_tsv("data_raw/rna-seq/raw_counts.txt")
+samples <- read_csv("metadata/samples_bulk_rnaseq.csv", comment = "#") 
+
+
+
+# Normalize data ----------------------------------------------------------
 
 rna_data_unfiltered <- DGEList(
   counts =
@@ -49,10 +57,6 @@ rna_data_unfiltered <- DGEList(
     counts_raw %>% 
     select(gene_id, gene_type, level:strand)
 )
-
-
-
-# Perform DGE -------------------------------------------------------------
 
 genes_to_keep <- filterByExpr(rna_data_unfiltered)
 rna_data <- rna_data_unfiltered[genes_to_keep,, keep.lib.sizes = FALSE]
@@ -74,7 +78,6 @@ rbind(
     legend.key.height = unit(2, "mm"),
     legend.key.width = unit(2, "mm")
   )
-ggsave_default("rnaseq/human_logcpm_dist", width = 100, height = 50)
 
 
 rna_data <- calcNormFactors(rna_data)
@@ -86,15 +89,11 @@ tibble(
   label = rownames(mds$distance.matrix.squared)
 ) %>%
   left_join(samples, by = join_by(label == sample)) %>% 
-  mutate(sample_id = str_sub(label, -3)) %>% 
+  mutate(
+    patient = recode(patient, patient1 = "Patient 1", patient2 = "Patient 2")
+  ) %>% 
   ggplot(aes(x = mds_1, y = mds_2)) +
   geom_point(aes(color = condition, shape = patient)) +
-  geom_text_repel(
-    aes(label = sample_id),
-    size = BASE_TEXT_SIZE_MM,
-    segment.size = BASE_LINEWIDTH,
-    seed = 1
-  ) +
   xlab(
     str_glue("Leading logFC dim 1 ({round(mds$var.explained[1] * 100, 1)} %)")
   ) +
@@ -107,11 +106,14 @@ tibble(
     legend.key.height = unit(2, "mm"),
     legend.key.width = unit(2, "mm")
   )
-ggsave_default("rnaseq/human_mds", type = "pdf", width = 80)
+ggsave_default("S10c_bulkrnaseq_mds", type = "pdf", width = 80)
+
+
+
+# Perform DGE -------------------------------------------------------------
 
 design <- model.matrix(~0 + condition + patient, data = rna_data$samples)
 colnames(design) <- str_replace(colnames(design), "condition", "")
-design
 
 contrasts <- makeContrasts(
   TGFb_vs_healthy = TGFb - healthy,
@@ -140,26 +142,11 @@ dge <-
   list_rbind(names_to = "comparison") %>% 
   mutate(comparison = factor(comparison) %>% fct_relevel(colnames(contrasts)))
   
-dge
-dge %>% save_table("rnaseq_human_dge")
+# dge %>% save_table("rnaseq_human_dge")
 
 
 
-# Analyze results ---------------------------------------------------------
-
-dge %>% filter(p_adj <= 0.1)
-dge %>% filter(p_adj <= 0.1) %>% count(comparison)
-
-ggplot(dge, aes(logFC, -log10(p))) +
-  geom_point(alpha = .25, size = 0.1) +
-  facet_wrap(vars(comparison)) +
-  theme_pub()
-ggsave_default("rnaseq/human_volcano", type = "pdf", width = 120, height = 40)
-
-c("IL11", "COMP", "NPR3", "NOX4", "COL7A1", "LRRC15", "TSPAN2", "GAL",
-  "ACKR2", "CILP", "ELN", "PDE4B", "DEPP1", "C7", "SYNE3", "APOL6",
-  "ANKRD33", "SLC14A1", "SCARA5", "CAMK2B", "CHI3L1", "MYOZ2", "LACC1",
-  "ABCA9", "CFB", "ZBTB7C")
+# Plot DGE ----------------------------------------------------------------
 
 plot_volcano <- function() {
   selected_genes <- tribble(
@@ -245,104 +232,11 @@ plot_volcano <- function() {
 }
 
 plot_volcano()
-ggsave_default("rnaseq/6e_human_volcano_pub", type = "pdf", width = 80, height = 40)
-ggsave_default("rnaseq/6e_human_volcano_pub_large", type = "pdf", width = 160, height = 80)
-
-
-plot_expression_heatmap <- function(genes, samples = NULL) {
-  samples <- samples %||% rownames(rna_data_unfiltered$samples)
-  
-  mat <- 
-    cpm(rna_data_unfiltered, log = TRUE) %>%
-    limma::removeBatchEffect(
-      batch = rna_data_unfiltered$samples$patient,
-      group = rna_data_unfiltered$samples$group
-    ) %>%
-    magrittr::set_rownames(rna_data_unfiltered$genes$gene_name) %>% 
-    t() %>% 
-    scale() %>% 
-    t() %>% 
-    magrittr::extract(genes, samples)
-  
-  Heatmap(
-    mat,
-    cluster_rows = FALSE,
-    # cluster_columns = FALSE,
-    width = ncol(mat) * unit(2, "mm"),
-    height = nrow(mat) * unit(2, "mm")
-    # row_split = rep(c("up", "down"), each = 20)
-  )
-}
-
-# top 20 genes with pos/neg logFC
-top_genes <- c(
-  dge %>%
-    filter(comparison == "TGFb_vs_healthy") %>%
-    slice_max(logFC, n = 20, with_ties = FALSE) %>%
-    pull(gene),
-  dge %>%
-    filter(comparison == "TGFb_vs_healthy") %>%
-    slice_min(logFC, n = 20, with_ties = FALSE) %>%
-    pull(gene)
-)
-
-selected_samples <- 
-  samples %>% 
-  filter(condition != "Kat5_inhibitor1") %>% 
-  pull(sample)
-
-(p <- plot_expression_heatmap(top_genes, selected_samples))
-ggsave_default("rnaseq/human_dge_heatmap", plot = p, type = "pdf", width = 100)
-
-
-# manually selected genes
-# manual_genes <- c(
-#   # fibrotic
-#   "LOX", "CTHRC1", "COL1A1", "ACTA2", "POSTN", "MEOX1",
-#   
-#   # antifibrotic/quiescent
-#   "PDGFRA", "MGP", "SPON2"
-# )
-
-gene_map <-
-  read_tsv("metadata/biomart_human_mouse_20210727.tsv") %>% 
-  select(gene_human = `Human gene name`, gene_mouse = `Gene name`) %>% 
-  distinct()
-
-manual_genes <- c("Spon2", "Col6a1", "Cygb", "Vcan",
-               # "Igfp4",
-               "Sox9", "Cebpb",
-               "Sfrp1",
-               # "Lgasl3",
-               "Prl2c3", "Mmp3", "Prl2c2", "Meox1",
-               "Bhlhe41", "Myl9", "Egr2", "Acta2", "Tagln", "Tpm1", "Ltbp2",
-               "Ccn2", "Hbegf", "Serpine1", "Pdlim1", "Lox", "Ccn4", "Postn",
-               "Tnc", "Loxl2", "Tgfb1", "Pmepa1", "Runx1", "Cthrc1", "Ncam1",
-               "Adam12", "Clu", "Mfap4", "Prg4", "Col3a1", "Col1a1", "Col1a2",
-               "Mmp14", "Adamts10", "Serpinh1", "Col4a2", "Loxl3", "Mmp23",
-               "Junb", "Ddah1", "Col5a1", "Myh9", "Foxc2", "Actn1", "Myl6",
-               "Jun", "Prss23", "Adam5", "Palld", "Hspg2")
-
-manual_genes <-
-  tibble(gene_mouse = manual_genes) %>% 
-  left_join(gene_map) %>% 
-  filter(!is.na(gene_human)) %>% 
-  pull(gene_human)
-
-(p <- plot_expression_heatmap(manual_genes))
-ggsave_default("rnaseq/human_selected_genes_heatmap", plot = p)
-
+ggsave_default("6d_bulkrnaseq_volcano", type = "pdf", width = 160, height = 80)
 
 
 
 # Perform GSEA ------------------------------------------------------------
-
-enrichr_genesets <- read_rds("data_generated/enrichr_genesets_human.rds")
-enrichr_genesets$fibroblast_markers <-
-  read_rds("data_generated/fibroblast_markers.rds") %>% 
-  summarise(.by = c(ref, cluster), genes = list(gene_human)) %>% 
-  unite(ref, cluster, col = db) %>% 
-  deframe()
 
 run_gsea <- function(comparison, db) {
   ranked_genes <-
@@ -381,12 +275,7 @@ gsea_results <-
   list_rbind() %>%
   mutate(comparison = factor(comparison) %>% fct_relevel(colnames(contrasts)))
 
-ggplot(gsea_results, aes(NES, -log10(padj))) +
-  geom_point(alpha = 0.25)
-ggsave_default("rnaseq/human_gsea_nes", type = "pdf")
-
-gsea_results %>% filter(padj <= 0.05)
-gsea_results %>% save_table("rnaseq_human_gsea")
+# gsea_results %>% save_table("rnaseq_human_gsea")
 
 
 
@@ -508,7 +397,7 @@ terms_for_main_fig <- tribble(
   "Kuppe_Fib4",
 )
 plot_terms(terms_for_main_fig)
-ggsave_default("rnaseq/6f_human_gsea_pub_main_fig", type = "pdf", height = 65)
+ggsave_default("6e_bulkrnaseq_signatures", type = "pdf", height = 65)
 
 
 terms_for_supp_fig <- tribble(
@@ -532,19 +421,13 @@ terms_for_supp_fig <- tribble(
   "Koenig_Fb5 - ELN",
   "Koenig_Fb7 - CCL2",
   "Kuppe_Fib1",
-  # "JAK-STAT signaling pathway",
-  # "Hedgehog signaling pathway",
-  # "TNF-alpha Signaling via NF-kB",
-  # "Inflammatory Response",
 )
 plot_terms(terms_for_supp_fig)
-ggsave_default("rnaseq/S10g_human_gsea_pub_supp_fig", type = "pdf", width = 51)
+ggsave_default("S10e_bulkrnaseq_signatures", type = "pdf", width = 51)
 
 
 
 # Correlation heatmap -----------------------------------------------------
-
-## Counts ----
 
 corr_mat <-
   limma::removeBatchEffect(
@@ -556,6 +439,19 @@ corr_mat <-
 
 distance <- as.dist(1 - corr_mat)
 
+
+figure_colnames <- c(
+    Kat5_pos_1_2015_S15 = "iKat5 Patient 1",
+    Kat5_pos_2017_S18 = "iKat5 Patient 2",
+    Mock_neg_1_2015_S13 = "Healthy Patient 1",
+    Mock_neg_2017_S16 = "Healthy Patient 2",
+    Mock_pos_1_2015_S14 = "TGFb Patient 1",
+    Mock_pos_2017_S17 = "TGFb Patient 2"
+  )
+colnames(corr_mat) <- colnames(corr_mat) %>% recode(!!!figure_colnames)
+rownames(corr_mat) <- rownames(corr_mat) %>% recode(!!!figure_colnames)
+  
+  
 (p <- Heatmap(
   corr_mat,
   col = circlize::colorRamp2(
@@ -583,46 +479,5 @@ distance <- as.dist(1 - corr_mat)
   show_column_dend = FALSE,
   show_column_names = FALSE
 ))
-ggsave_default("rnaseq/human_cor_heatmap", plot = p, width = 150, type = "pdf")
-
-
-## log-fold changes ----
-
-corr_mat <-
-  dge %>% 
-  distinct(comparison, gene, .keep_all = TRUE) %>% 
-  pivot_wider(names_from = comparison, values_from = logFC, id_cols = gene) %>% 
-  mutate(TGFb_vs_Kat5i = -Kat5i_vs_TGFb) %>% 
-  select(!c(gene, Kat5i_vs_TGFb)) %>%
-  cor()
-
-distance <- as.dist(1 - corr_mat)
-
-(p <- Heatmap(
-  corr_mat,
-  col = circlize::colorRamp2(
-    seq(min(corr_mat), max(corr_mat), length.out = 9),
-    color("davos", reverse = TRUE)(9),
-  ),
-  
-  name = "correlation of\nlog-fold changes",
-  heatmap_legend_param = list(
-    at = round(c(min(corr_mat), max(corr_mat)), 2),
-    border = FALSE,
-    grid_width = unit(2, "mm"),
-    legend_height = unit(15, "mm")
-  ),
-  
-  clustering_distance_rows = distance,
-  clustering_distance_columns = distance,
-  row_dend_gp = gpar(lwd = 0.5),
-  row_title = "samples",
-  row_title_side = "right",
-  
-  width = unit(20, "mm"),
-  height = unit(20, "mm"),
-  
-  show_column_dend = FALSE,
-  show_column_names = FALSE
-))
-ggsave_default("rnaseq/human_cor_heatmap_logfc", plot = p, width = 150, type = "pdf")
+ggsave_default("S10d_bulkrnaseq_expression_correlation",
+               plot = p, width = 150, type = "pdf")

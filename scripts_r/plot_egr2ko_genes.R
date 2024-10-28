@@ -13,32 +13,14 @@ dge <- read_rds("data_generated/dge.rds")
 # Plot data ---------------------------------------------------------------
 
 labeled_genes <- c(
-  "Acta2",
-  "Myl9",
-  "Pdlim1",
-  "Myh9",
-  "Palld",
-  "Tagln",
-  "Tnc",
-  "Ltbp2",
-  "Hspg2",
-  "Col1a1",
-  "Col1a2",
-  "Lox",
-  "Ddah1",
-  "Hbegf",
   "Ccn2",
-  "Egr2",
-  "Meox1",
-  "Pdgfra",
-  "Mgp",
-  "Spon2",
   "Cthrc1",
-  "Postn",
-  "Cygb",
+  "Hbegf",
+  "Lox",
+  "Ltbp2",
+  "Meox1",
   "Vcan"
 )
-
 
 
 plot_volcano <- function(genes) {
@@ -93,5 +75,4 @@ plot_volcano <- function(genes) {
 }
 
 plot_volcano(labeled_genes)
-ggsave_default("5f_volcano", type = "pdf", width = 50, height = 50)
-# ggsave_default("5f_volcano_huge", type = "pdf", width = 400, height = 400)
+ggsave_default("S8h_volcano", type = "pdf", width = 50, height = 50)
