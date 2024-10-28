@@ -1469,6 +1469,21 @@
       ],
       "Hash": "e1b9c55281c5adc4dd113652d9e26768"
     },
+    "khroma": {
+      "Package": "khroma",
+      "Version": "1.14.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "grDevices",
+        "graphics",
+        "grid",
+        "stats",
+        "utils"
+      ],
+      "Hash": "be72267897f910b1f0fb2bcc9e35823d"
+    },
     "knitr": {
       "Package": "knitr",
       "Version": "1.45",
