@@ -38,7 +38,7 @@ enrichr_genesets$fibroblast_markers <-
   unite(ref, cluster, col = db) %>% 
   deframe()
 
-counts_raw <- read_tsv("data_raw/rna-seq/raw_counts.txt")
+counts_raw <- read_tsv("data_raw/rna-seq/GSE280438_raw_counts.txt")
 samples <- read_csv("metadata/samples_bulk_rnaseq.csv", comment = "#") 
 
 

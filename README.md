@@ -25,7 +25,7 @@ This code supplements the upcoming publication by Aguado Alvaro, Garitano, Esser
 Create a folder `data_raw` that will contain raw data in the following subfolders:
 
 - `rna`: Download `GSE261783_RAW.tar` from GEO Series GSE261783 and extract all files.
-- `rna-seq`: Download XXX from GEO Series GSExxx and extract all files.
+- `rna-seq`: Download `GSE280438_raw_counts.txt.gz` from GEO Series GSE280438 and extract the file.
 - `signatures`:
   - `Amrute.xlsx`: Table S10 from Amrute et al (https://doi.org/10.1038/s44161-023-00260-8)
   - `Buechler.xlsx`: Table S5 from Buechler et al (https://doi.org/10.1038/s41586-021-03549-5)
