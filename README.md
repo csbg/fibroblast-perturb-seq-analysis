@@ -61,3 +61,4 @@ Run the following scripts in the folder `scripts_r` in order to run the R analys
 8. `plot_gsea.R`: plot GSEA results (S6b)
 9. `plot_egr2ko_genes.R`: Volcano plot of Egr2-KO vs NTC (S8h)
 10. `plot_bulk_rnaseq.R`: bulk RNA-seq analysis of patient-derived fibroblasts (6d, e, S10c, d, e)
+11. `plot_fap_expression.R`: expression of Fab (R15)
