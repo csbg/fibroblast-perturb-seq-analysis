@@ -481,3 +481,39 @@ rownames(corr_mat) <- rownames(corr_mat) %>% recode(!!!figure_colnames)
 ))
 ggsave_default("S10d_bulkrnaseq_expression_correlation",
                plot = p, width = 150, type = "pdf")
+
+
+
+# Raw gene expression -----------------------------------------------------
+
+plot_raw_expression <- function(genes) {
+  cpm(rna_data$counts, log = TRUE) %>%
+    # limma::removeBatchEffect(
+    #   batch = rna_data$samples$patient,
+    #   group = rna_data$samples$group
+    # ) %>%
+    magrittr::set_rownames(rna_data$genes$gene_name) %>% 
+    as_tibble(rownames = "gene") %>% 
+    filter(gene %in% genes) %>%
+    pivot_longer(!gene, names_to = "sample", values_to = "logCPM") %>% 
+    left_join(samples, by = "sample") %>% 
+    mutate(condition = fct_relevel(condition, "healthy", "TGFb")) %>% 
+    ggplot(aes(condition, logCPM)) +
+    stat_summary(geom = "col", fun.data = "mean_se", fill = "gray80") +
+    geom_point(aes(color = patient), size = 1) +
+    ylim(0, NA) +
+    facet_wrap(vars(gene)) +
+    theme_pub(rotate_x_labels = TRUE)
+}
+
+plot_raw_expression(c("POSTN", "CTHRC1", "ACTA2"))
+ggsave_default("raw_expression", width = 80, height = 60)
+
+plot_raw_expression("FAP")
+ggsave_default("raw_expression_FAP", width = 50, height = 60)
+
+
+cpm(rna_data$counts, log = TRUE) %>%
+  magrittr::set_rownames(rna_data$genes$gene_name) %>% 
+  as_tibble(rownames = "gene") %>% 
+  write_csv("normalized_counts_human.csv")

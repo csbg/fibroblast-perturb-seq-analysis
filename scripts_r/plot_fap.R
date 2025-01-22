@@ -88,3 +88,51 @@ plot_gene(target)
 ggsave_default("R15c_expression_Fap_target",
                type = "pdf", width = 100, height = 80)
 
+
+
+# Plot expression percentage ----------------------------------------------
+
+plot_data_pct <- 
+  plot_data %>% 
+  summarise(
+    .by = c(cell_type, condition),
+    n_fap = sum(expression_Fap > 0),
+    n = n()
+  ) %>%
+  mutate(
+    pct_fap = n_fap / n,
+    high_fap = pct_fap > 0.05
+  )
+
+ggplot(plot_data_pct, aes(cell_type, condition, size = n)) + 
+  geom_point(aes(color = pct_fap)) +
+  geom_point(
+    data = plot_data_pct %>% filter(high_fap),
+    shape = 1,
+    show.legend = FALSE
+  ) +
+  xlab("fibroblast subtype") +
+  scale_color_gradient(
+    "% expressing FAP",
+    low = "lightgrey", 
+    high = "blue", 
+    limits = c(0, NA),
+    guide = guide_colorbar(
+      barheight = unit(13, "mm"),
+      barwidth = unit(2, "mm"),
+      ticks = FALSE
+    )
+  ) + 
+  scale_size_area(
+    "number of cells",
+    max_size = 3
+  ) +
+  theme_pub(rotate_x_labels = TRUE) +
+  theme(
+    legend.key.height = unit(3, "mm"),
+    legend.key.width = unit(3, "mm"),
+    legend.margin = margin(),
+    legend.box = "horizontal",
+    legend.box.just = "bottom"
+  )
+ggsave_default("pct_FAP", type = "pdf", width = 85, height = 45)
