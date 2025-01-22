@@ -1,4 +1,6 @@
-# fibroblast-perturb-seq-analysis
+# Identification of epigenetic regulators of fibrotic transformation in cardiac fibroblasts through bulk and single-cell CRISPR screens.
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14717236.svg)](https://doi.org/10.5281/zenodo.14717236)
 
 This code supplements the upcoming publication by Aguado Alvaro, Garitano, Esser-Skala et al.
 
