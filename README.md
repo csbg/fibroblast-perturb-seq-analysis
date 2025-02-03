@@ -37,7 +37,7 @@ Create a folder `data_raw` that will contain raw data in the following subfolder
   - `Koenig.xlsx`: Table S27 from Koenig et al (https://doi.org/10.1038/s44161-022-00028-6)
   - `Kuppe.xlsx`: Table S13 from Kuppe et al (https://doi.org/10.1038/s41586-022-05060-x)
 
-Optionally, obtain intermediary data: Extract the contents of `data_generated.tgz` from Zenodo repository https://doi.org/XXX to folder `data_generated`.
+Optionally, obtain intermediary data: Extract the contents of `data.tgz` from Zenodo repository https://doi.org/10.5281/zenodo.14794723 to folder `data_generated`.
 
 
 
