@@ -125,7 +125,7 @@ markers_mouse <-
   )
 
 markers_own <- 
-  read_csv("data_raw/signatures/murine_fibroblasts.csv", comment = "#") %>% 
+  read_csv("metadata/murine_fibroblasts.csv", comment = "#") %>% 
   left_join(
     gene_map,
     by = "gene_mouse",

@@ -90,7 +90,7 @@ markers <-
     !is.na(gene)
   ) %>% 
   bind_rows(
-    read_csv("data_raw/signatures/murine_fibroblasts.csv", comment = "#")
+    read_csv("metadata/murine_fibroblasts.csv", comment = "#")
   )
 
 

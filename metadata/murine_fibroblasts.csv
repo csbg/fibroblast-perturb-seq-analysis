@@ -1,0 +1,20 @@
+# markers for the murine ex vivo fibroblasts analyzed in this work
+ref,cluster,gene_mouse
+exvivo,resting,Pdgfra
+exvivo,resting,Mgp
+exvivo,resting,Cd248
+exvivo,resting,Gpx3
+exvivo,resting,Spon2
+exvivo,fibrotic,Acta2
+exvivo,fibrotic,Myl9
+exvivo,fibrotic,Col1a1
+exvivo,fibrotic,Postn
+exvivo,fibrotic,Lox
+exvivo,fibrotic,Hbegf
+exvivo,fibrotic,Ccn2
+exvivo,fibrotic,Meox1
+exvivo,inflammatory,Ccl2
+exvivo,inflammatory,Ccl7
+exvivo,inflammatory,Mt2
+exvivo,inflammatory,Cxcl1
+exvivo,inflammatory,Csf1
