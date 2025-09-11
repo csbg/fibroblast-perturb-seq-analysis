@@ -47,7 +47,7 @@ col_metadata <-
 
 add_count_cols <- function(df, genes) {
   count_cols <- 
-    logcounts(sce)[genes, , drop = FALSE] %>%
+    counts(sce)[genes, , drop = FALSE] %>%
     t() %>%
     as.matrix() %>%
     as_tibble() %>% 
@@ -77,7 +77,7 @@ plot_gene <- function(col) {
 
 
 plot_gene(condition)
-ggsave_default("R15a_expression_Fap_condition",
+ggsave_default("R15a_expression_Fap_condition_counts",
                type = "pdf", width = 20, height = 50)
 
 plot_gene(cell_type)
@@ -95,23 +95,23 @@ ggsave_default("R15c_expression_Fap_target",
 plot_data_pct <- 
   plot_data %>% 
   summarise(
-    .by = c(cell_type, condition),
+    .by = c( condition),
     n_fap = sum(expression_Fap > 0),
     n = n()
   ) %>%
   mutate(
-    pct_fap = n_fap / n,
+    pct_fap = n_fap / n * 100,
     high_fap = pct_fap > 0.05
   )
 
-ggplot(plot_data_pct, aes(cell_type, condition, size = n)) + 
+ggplot(plot_data_pct, aes(x = "FAP expression", condition, size = n)) + 
   geom_point(aes(color = pct_fap)) +
   geom_point(
     data = plot_data_pct %>% filter(high_fap),
     shape = 1,
     show.legend = FALSE
   ) +
-  xlab("fibroblast subtype") +
+  xlab(NULL) +
   scale_color_gradient(
     "% expressing FAP",
     low = "lightgrey", 
@@ -127,7 +127,7 @@ ggplot(plot_data_pct, aes(cell_type, condition, size = n)) +
     "number of cells",
     max_size = 3
   ) +
-  theme_pub(rotate_x_labels = TRUE) +
+  theme_pub(rotate_x_labels = FALSE) +
   theme(
     legend.key.height = unit(3, "mm"),
     legend.key.width = unit(3, "mm"),
@@ -135,4 +135,23 @@ ggplot(plot_data_pct, aes(cell_type, condition, size = n)) +
     legend.box = "horizontal",
     legend.box.just = "bottom"
   )
-ggsave_default("pct_FAP", type = "pdf", width = 85, height = 45)
+ggsave_default("pct_FAP", type = "pdf", width = 55, height = 20)
+
+
+ggplot(plot_data_pct, aes(condition, pct_fap)) +
+  geom_col() +
+  ylab("FAP expression (%)") +
+  coord_flip() +
+  scale_y_continuous(expand = expansion(add = 0)) +
+  theme_pub() +
+  theme(
+    panel.grid = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+ggsave_default("pct_FAP2", type = "pdf", width = 55, height = 20)
+
+
+plot_data %>% 
+  count(expression_Fap) %>% 
+  magrittr::set_colnames(c("counts", "number_of_cells"))
