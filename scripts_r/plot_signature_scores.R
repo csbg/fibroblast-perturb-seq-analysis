@@ -210,10 +210,10 @@ plot_murine_signatures <- function(data,
 
 (p <- plot_murine_signatures(plot_data_sig, "Forte",
                              color_limit = 2, row_order = cell_type_order))
-ggsave_default("S2c_signatures_Forte", plot = p)
+ggsave_default("S2d_signatures_Forte", plot = p)
 
 (p <- plot_murine_signatures(plot_data_sig, "Buechler"))
-ggsave_default("S2d_signatures_Buechler", plot = p)
+ggsave_default("S2e_signatures_Buechler", plot = p)
 
 
 ## Human signature heatmaps ----

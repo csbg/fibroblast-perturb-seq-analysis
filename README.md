@@ -56,7 +56,7 @@ Run the following scripts in the folder `scripts_r` in order to run the R analys
 1. `create_sce.R`: interface to Python scripts; creates a SingleCellObject with the same data and metadata as the AnnData object
 2. `prepare_signatures.R`: assemble fibroblast signatures and gene sets for enrichment analysis
 3. `run_gsea.R`: perform gene set enrichment analysis
-4. `plot_signature_scores.R`: fibroblast signature scores as heatmaps (figure 6b, S2c, S2d)
+4. `plot_signature_scores.R`: fibroblast signature scores as heatmaps (figure 6b, S2d, S2e)
 5. `plot_signature_enrichments.R`: fibroblast enrichments as dotplots (S10a)
 6. `plot_ko_distribution.R`: UMAPs with knockout distribution (2f, S5)
 7. `plot_ko_enrichment.R`: summary of knockout enrichment (2g, S6a)
