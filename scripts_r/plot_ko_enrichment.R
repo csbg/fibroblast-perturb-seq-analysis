@@ -326,3 +326,7 @@ plot_summary_all(
   cluster_order = cluster_order
 )
 ggsave_default("S6a_ko_enrichment_summary_all", type = "pdf", width = 130)
+
+test_results_summary %>% 
+  select(!same_sign) %>% 
+  save_table("source_data/2g_S6a")

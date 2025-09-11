@@ -139,7 +139,7 @@ gsea_results <-
 
 # Plots -------------------------------------------------------------------
 
-plot_signatures <- function(enriched_terms) {
+plot_signatures <- function(enriched_terms, source_data_file = NULL) {
   selected_comparisons <- c(
     "Resting" = "Resting_Target_vs_NTC",
     "Tgfb1" = "Tgfb1_Target_vs_NTC",
@@ -173,6 +173,12 @@ plot_signatures <- function(enriched_terms) {
   
   # set limits for colorbar
   color_limit <- max(abs(data_vis$NES), na.rm = TRUE)
+  
+  if (!is.null(source_data_file)) {
+    data_vis %>% 
+      select(comparison, group, pathway, NES, padj) %>% 
+      save_table(str_glue("source_data/{source_data_file}"))
+  }
   
   # make plot  
   ggplot(data_vis, aes(comparison, pathway, size = -log10(padj))) +
@@ -219,7 +225,7 @@ gsea_results %>%
       as_factor(pathway) %>% 
       fct_rev()
   ) %>% 
-  plot_signatures()
+  plot_signatures(source_data_file = "S10a")
 ggsave_default("S10a_fibroblast_signatures_selected_targets", 
                type = "pdf", width = 130)
 

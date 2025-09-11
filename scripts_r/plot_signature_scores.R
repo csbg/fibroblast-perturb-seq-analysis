@@ -158,7 +158,8 @@ cell_type_order <- c(
 plot_murine_signatures <- function(data,
                                    ref = NULL,
                                    color_limit = NULL,
-                                   row_order = NULL) {
+                                   row_order = NULL,
+                                   source_data_file = NULL) {
   col_prefix <- str_c("signature", ref, "", sep = "_")
   
   mat <- 
@@ -179,6 +180,12 @@ plot_murine_signatures <- function(data,
     
   if (is.null(color_limit))
     color_limit <- max(range(mat))
+  
+  if (!is.null(source_data_file)) {
+    mat %>% 
+      as_tibble(rownames = "cell_type") %>% 
+      save_table(str_glue("source_data/{source_data_file}"))
+  }
   
   Heatmap(
     mat,
@@ -209,10 +216,12 @@ plot_murine_signatures <- function(data,
 }
 
 (p <- plot_murine_signatures(plot_data_sig, "Forte",
-                             color_limit = 2, row_order = cell_type_order))
+                             color_limit = 2, row_order = cell_type_order,
+                             source_data_file = "S2d"))
 ggsave_default("S2d_signatures_Forte", plot = p)
 
-(p <- plot_murine_signatures(plot_data_sig, "Buechler"))
+(p <- plot_murine_signatures(plot_data_sig, "Buechler",
+                             source_data_file = "S2e"))
 ggsave_default("S2e_signatures_Buechler", plot = p)
 
 
@@ -247,7 +256,8 @@ selected_signatures <- tribble(
 plot_human_signatures <- function(data,
                                   selected_signatures,
                                   color_limit = NULL,
-                                  row_order = NULL) {
+                                  row_order = NULL,
+                                  source_data_file = NULL) {
   data <-
     data %>%
     select(cell_type, contains(selected_signatures$signature))
@@ -279,6 +289,12 @@ plot_human_signatures <- function(data,
   
   if (is.null(color_limit))
     color_limit <- max(range(mat))
+  
+  if (!is.null(source_data_file)) {
+    mat %>% 
+      as_tibble(rownames = "cell_type") %>% 
+      save_table(str_glue("source_data/{source_data_file}"))
+  }
   
   Heatmap(
     mat,
@@ -337,5 +353,6 @@ plot_human_signatures <- function(data,
 
 (p <- plot_human_signatures(plot_data_sig,
                             selected_signatures,
-                            row_order = cell_type_order))
+                            row_order = cell_type_order,
+                            source_data_file = "6b"))
 ggsave_default("6b_signatures_human", plot = p, type = "pdf", width = 150)

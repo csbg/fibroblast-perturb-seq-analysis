@@ -70,6 +70,9 @@ ggsave_default <- function(filename,
 #' @return Nothing.
 save_table <- function(tables, filename, sheet_name = "Sheet1") {
   filename <- str_glue("tables/{filename}.xlsx")
+  filename %>%
+    fs::path_dir() %>%
+    fs::dir_create()
   wb <- createWorkbook()
 
   # ensure that tables is a named list

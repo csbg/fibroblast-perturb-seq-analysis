@@ -84,3 +84,8 @@ wrap_plots(
   guides = "collect"
 )
 ggsave_default("S5_umap_ko_distribution", type = "pdf")
+
+
+col_data %>% 
+  select(barcode, target, UMAP_X, UMAP_Y) %>% 
+  save_table("source_data/2f_S5")

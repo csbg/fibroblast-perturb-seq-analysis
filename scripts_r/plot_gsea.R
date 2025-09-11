@@ -55,7 +55,7 @@ selected_targets <- c(
   "Paxip1", "Kmt2a", "Egr2", "Rest", "Rnf40"
 )
 
-plot_terms <- function(terms, targets) {
+plot_terms <- function(terms, targets, source_data_file = NULL) {
   terms <- 
     terms %>% 
     mutate(term_display = as_factor(term_display))
@@ -79,6 +79,13 @@ plot_terms <- function(terms, targets) {
   
   # set limits for colorbar
   color_limit <- max(abs(data_vis$NES), na.rm = TRUE)
+  
+  # export source data
+  if (!is.null(source_data_file)) {
+    data_vis %>% 
+      select(comparison, group, term_display, NES, padj) %>% 
+      save_table(str_glue("source_data/{source_data_file}"))
+  }
   
   # make plot  
   ggplot(data_vis, aes(comparison, term_display, size = -log10(padj))) +
@@ -119,6 +126,6 @@ plot_terms <- function(terms, targets) {
     )
 }
 
-plot_terms(selected_terms, selected_targets)
+plot_terms(selected_terms, selected_targets, source_data_file = "S6b")
 ggsave_default("S6b_gsea", type = "pdf", width = 210)
 

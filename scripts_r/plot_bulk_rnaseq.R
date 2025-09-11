@@ -82,30 +82,41 @@ rbind(
 
 rna_data <- calcNormFactors(rna_data)
 
-mds <- plotMDS(cpm(rna_data, log = TRUE), plot = FALSE)
-tibble(
-  mds_1 = mds$x,
-  mds_2 = mds$y,
-  label = rownames(mds$distance.matrix.squared)
-) %>%
-  left_join(samples, by = join_by(label == sample)) %>% 
-  mutate(
-    patient = recode(patient, patient1 = "Patient 1", patient2 = "Patient 2")
-  ) %>% 
-  ggplot(aes(x = mds_1, y = mds_2)) +
-  geom_point(aes(color = condition, shape = patient)) +
-  xlab(
-    str_glue("Leading logFC dim 1 ({round(mds$var.explained[1] * 100, 1)} %)")
-  ) +
-  ylab(
-    str_glue("Leading logFC dim 2 ({round(mds$var.explained[2] * 100, 1)} %)")
-  ) +
-  coord_fixed() +
-  theme_pub() +
-  theme(
-    legend.key.height = unit(2, "mm"),
-    legend.key.width = unit(2, "mm")
-  )
+plot_bulkrnaseq_mds <- function(source_data_file = NULL) {
+  mds <- plotMDS(cpm(rna_data, log = TRUE), plot = FALSE)
+  data_vis <- 
+    tibble(
+      mds_1 = mds$x,
+      mds_2 = mds$y,
+      label = rownames(mds$distance.matrix.squared)
+    ) %>%
+      left_join(samples, by = join_by(label == sample)) %>% 
+      mutate(
+        patient = recode(patient, patient1 = "Patient 1", patient2 = "Patient 2")
+      )
+  
+  if (!is.null(source_data_file)) {
+    data_vis %>% 
+      save_table(str_glue("source_data/{source_data_file}"))
+  }
+  
+  ggplot(data_vis, aes(x = mds_1, y = mds_2)) +
+    geom_point(aes(color = condition, shape = patient)) +
+    xlab(
+      str_glue("Leading logFC dim 1 ({round(mds$var.explained[1] * 100, 1)} %)")
+    ) +
+    ylab(
+      str_glue("Leading logFC dim 2 ({round(mds$var.explained[2] * 100, 1)} %)")
+    ) +
+    coord_fixed() +
+    theme_pub() +
+    theme(
+      legend.key.height = unit(2, "mm"),
+      legend.key.width = unit(2, "mm")
+    )
+}
+
+plot_bulkrnaseq_mds(source_data_file = "S10c")
 ggsave_default("S10c_bulkrnaseq_mds", type = "pdf", width = 80)
 
 
@@ -148,7 +159,7 @@ dge <-
 
 # Plot DGE ----------------------------------------------------------------
 
-plot_volcano <- function() {
+plot_volcano <- function(source_data_file = NULL) {
   selected_genes <- tribble(
     ~gene_human, ~type,
     "ACTA2", "fibrotic",
@@ -194,6 +205,11 @@ plot_volcano <- function() {
     plot_data %>%
     inner_join(selected_genes, by = join_by(gene == gene_human))
   
+  if (!is.null(source_data_file)) {
+    plot_data %>% 
+      save_table(str_glue("source_data/{source_data_file}"))
+  }
+  
   ggplot(plot_data, aes(logFC, -log10(p))) +
     geom_point(
       size = 0.1,
@@ -231,7 +247,7 @@ plot_volcano <- function() {
     theme(panel.grid = element_blank())
 }
 
-plot_volcano()
+plot_volcano(source_data_file = "6d")
 ggsave_default("6d_bulkrnaseq_volcano", type = "pdf", width = 160, height = 80)
 
 
@@ -320,7 +336,7 @@ selected_terms <- bind_rows(
 )
 
 
-plot_terms <- function(terms) {
+plot_terms <- function(terms, source_data_file = NULL) {
   terms <- 
     terms %>% 
     left_join(selected_terms, by = join_by(pathway)) %>% 
@@ -339,6 +355,13 @@ plot_terms <- function(terms) {
   
   # set limits for colorbar
   color_limit <- max(abs(data_vis$NES), na.rm = TRUE)
+  
+  # export source data
+  if (!is.null(source_data_file)) {
+    data_vis %>% 
+      select(comparison, term_display, padj, NES) %>% 
+      save_table(str_glue("source_data/{source_data_file}"))
+  }
   
   # make plot  
   ggplot(data_vis, aes(comparison, term_display, size = -log10(padj))) +
@@ -396,7 +419,7 @@ terms_for_main_fig <- tribble(
   "Kuppe_Fib3",
   "Kuppe_Fib4",
 )
-plot_terms(terms_for_main_fig)
+plot_terms(terms_for_main_fig, source_data_file = "6e")
 ggsave_default("6e_bulkrnaseq_signatures", type = "pdf", height = 65)
 
 
@@ -422,7 +445,7 @@ terms_for_supp_fig <- tribble(
   "Koenig_Fb7 - CCL2",
   "Kuppe_Fib1",
 )
-plot_terms(terms_for_supp_fig)
+plot_terms(terms_for_supp_fig, source_data_file = "S10e")
 ggsave_default("S10e_bulkrnaseq_signatures", type = "pdf", width = 51)
 
 
@@ -481,6 +504,10 @@ rownames(corr_mat) <- rownames(corr_mat) %>% recode(!!!figure_colnames)
 ))
 ggsave_default("S10d_bulkrnaseq_expression_correlation",
                plot = p, width = 150, type = "pdf")
+
+corr_mat %>% 
+  as_tibble(rownames = "group") %>% 
+  save_table(str_glue("source_data/S10d"))
 
 
 

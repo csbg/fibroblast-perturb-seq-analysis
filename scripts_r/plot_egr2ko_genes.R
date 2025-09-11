@@ -76,3 +76,13 @@ plot_volcano <- function(genes) {
 
 plot_volcano(labeled_genes)
 ggsave_default("S8h_volcano", type = "pdf", width = 50, height = 50)
+
+
+dge %>% 
+  filter(
+    comparison == "Tgfb1_Target_vs_NTC",
+    group == "Egr2",
+    abs(logFC) < 10
+  ) %>% 
+  select(gene, logFC, p_adj) %>% 
+  save_table("source_data/S8h")
