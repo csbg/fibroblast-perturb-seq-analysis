@@ -16,6 +16,7 @@ This code supplements the upcoming publication by Aguado Alvaro, Garitano, Esser
 - `metadata`: additional required data
 - `plots`: generated plots
 - `renv`: R environment data
+- `scripts_atacseq`: scripts for the ATAC-seq analysis
 - `scripts_chipseq`: scripts for the ChIP-seq analysis
 - `scripts_python`: Python scripts
 - `scripts_r`: R scripts
