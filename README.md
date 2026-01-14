@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14717236.svg)](https://doi.org/10.5281/zenodo.14717236)
 
-This code supplements the upcoming publication by Aguado Alvaro, Garitano, Esser-Skala et al.
+This code supplements the [publication](https://doi.org/10.1038/s41467-025-66597-9) by Aguado Alvaro, Garitano, Esser-Skala et al.
 
 
 ## Folders

@@ -1,0 +1,130 @@
+cff-version: 1.2.0
+message: If you use this software, please cite both the article from preferred-citation and the software itself.
+title: Perturb-seq analysis scripts
+authors:
+- family-names: Esser-Skala
+  given-names: Wolfgang
+  orcid: https://orcid.org/0000-0002-7350-4045
+- family-names: Taylor-King
+  given-names: Jake P.
+  orcid: https://orcid.org/0000-0002-1025-0041
+- family-names: Gross
+  given-names: Torsten
+- family-names: Mendieta-Esteban
+  given-names: Julen
+  orcid: https://orcid.org/0000-0002-5834-7643
+- family-names: Alameda
+  given-names: Daniel
+- family-names: Fortelny
+  given-names: Nikolaus
+  orcid: https://orcid.org/0000-0003-4025-9968
+version: 1.2.0
+type: software
+license: MIT
+doi: 10.5281/zenodo.14717236
+repository-code: https://github.com/csbg/fibroblast-perturb-seq-analysis
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Aguado Álvaro
+      given-names: Laura Pilar
+      affiliation: Program of Cardiovascular Disease, Center for Applied Medical Research (CIMA), University of Navarra, Pamplona, Spain; Department of Biochemistry and Genetics, University of Navarra, Pamplona, Spain; Instituto de Investigación Sanitaria de Navarra (IdiSNA), Pamplona, Spain
+      email: laguado.3@alumni.unav.es
+    - family-names: Garitano
+      given-names: Nerea
+      affiliation: Program of Cardiovascular Disease, Center for Applied Medical Research (CIMA), University of Navarra, Pamplona, Spain; Department of Biochemistry and Genetics, University of Navarra, Pamplona, Spain; Instituto de Investigación Sanitaria de Navarra (IdiSNA), Pamplona, SpainDepartment of Biosciences and Medical Biology, University of Salzburg, Salzburg, Austria
+    - family-names: Esser-Skala
+      given-names: Wolfgang
+      affiliation: Department of Biosciences and Medical Biology, University of Salzburg, Salzburg, Austria; Center for Tumor Biology and Immunology (CTBI), University of Salzburg, Salzburg, Austria
+      orcid: https://orcid.org/0000-0002-7350-4045
+    - family-names: Sayers
+      given-names: Judy
+      affiliation: Institute of Developmental and Regenerative Medicine and Department of Physiology, Anatomy and Genetics, University of Oxford, Oxford, UK
+      orcid: https://orcid.org/0000-0003-2306-0607
+    - family-names: del Valle
+      given-names: Cynthia
+      affiliation: Centre for Applied Medical Research, University of Navarra, Pamplona, Spain
+    - family-names: Alameda
+      given-names: Daniel
+      affiliation: Centre for Applied Medical Research, University of Navarra, Pamplona, Spain; Genomics Core Facility, Instituto de Investigación Biomédica de Málaga y Plataforma en Nanomedicina–IBIMA Plataforma Bionand, Málaga, Spain
+    - family-names: Mendieta Esteban
+      given-names: Julen
+      affiliation: Centre for Applied Medical Research, University of Navarra, Pamplona, Spain
+      orcid: https://orcid.org/0000-0002-5834-7643
+    - family-names: Calleja Cervantes
+      given-names: Maria Erendira
+      affiliation: Centre for Applied Medical Research, University of Navarra, Pamplona, Spain
+      orcid: https://orcid.org/0000-0003-0688-0793
+    - family-names: Goñi Salaverri
+      given-names: Ainhoa
+      affiliation: Centre for Applied Medical Research, University of Navarra, Pamplona, Spain
+    - family-names: Zazpe
+      given-names: Jon
+      affiliation: Centre for Applied Medical Research, University of Navarra, Pamplona, Spain
+    - family-names: de Vito
+      given-names: Anna Rosaria
+      affiliation: Centre for Applied Medical Research, University of Navarra, Pamplona, Spain
+    - family-names: Marchese
+      given-names: Francesco
+      affiliation: Centre for Applied Medical Research, University of Navarra, Pamplona, Spain
+    - family-names: Alignani
+      given-names: Diego
+      affiliation: Centre for Applied Medical Research, University of Navarra, Pamplona, Spain
+    - family-names: Cudini
+      given-names: Juliana
+      affiliation: Relation Therapeutics, London, UK
+    - family-names: Gross
+      given-names: Torsten
+      affiliation: Relation Therapeutics, London, UK
+    - family-names: Rábago
+      given-names: Gregorio
+      affiliation: Department of Cardiology and Cardiac Surgery, Clínica Universidad de Navarra, Navarra, Spain
+      orcid: https://orcid.org/0000-0003-1936-6881
+    - family-names: Narayan
+      given-names: Nisha
+      affiliation: Department of Haematology, University of Cambridge, Cambridge, UK; Wellcome Trust-Medical Research Council Cambridge Stem Cell Institute, Cambridge, UK
+      orcid: https://orcid.org/0000-0002-4106-2166
+    - family-names: Martinez
+      given-names: Laura
+      affiliation: Program of Cardiovascular Disease, Center for Applied Medical Research (CIMA), University of Navarra, Pamplona, Spain
+    - family-names: Martinez
+      given-names: Sonia
+      affiliation: Program of Cardiovascular Disease, Center for Applied Medical Research (CIMA), University of Navarra, Pamplona, Spain
+    - family-names: Huntly
+      given-names: Brian
+      affiliation: Department of Haematology, University of Cambridge, Cambridge, UK; Wellcome Trust-Medical Research Council Cambridge Stem Cell Institute, Cambridge, UK
+    - family-names: Riley
+      given-names: Paul
+      affiliation: Institute of Developmental and Regenerative Medicine and Department of Physiology, Anatomy and Genetics, University of Oxford, Oxford, UK
+      orcid: https://orcid.org/0000-0002-9862-7332
+    - family-names: Gonzalez
+      given-names: Arantxa
+      affiliation: Program of Cardiovascular Disease, Center for Applied Medical Research (CIMA), University of Navarra, Pamplona, Spain; Instituto de Investigación Sanitaria de Navarra (IdiSNA), Pamplona, Spain; Department of Cardiology and Cardiac Surgery, Clínica Universidad de Navarra, Navarra, Spain; Department of Pathology, Anatomy and Physiology, Universidad de Navarra, Pamplona, Spain;  CIBERCV, Carlos III Institute of Health, Madrid, Spain
+      orcid: https://orcid.org/0000-0001-5986-6528
+    - family-names: Taylor-King
+      given-names: Jake P.
+      affiliation: Relation Therapeutics, London, UK
+      orcid: https://orcid.org/0000-0002-1025-0041
+    - family-names: Fortelny
+      given-names: Nikolaus
+      affiliation: Department of Biosciences and Medical Biology, University of Salzburg, Salzburg, Austria; Center for Tumor Biology and Immunology (CTBI), University of Salzburg, Salzburg, Austria
+      orcid: https://orcid.org/0000-0003-4025-9968
+      email: nikolaus.fortelny@plus.ac.at
+    - family-names: Pelacho
+      given-names: Beatriz
+      affiliation: Program of Cardiovascular Disease, Center for Applied Medical Research (CIMA), University of Navarra, Pamplona, Spain; Department of Biochemistry and Genetics, University of Navarra, Pamplona, Spain; Instituto de Investigación Sanitaria de Navarra (IdiSNA), Pamplona, Spain
+      orcid: https://orcid.org/0000-0002-0411-7164
+      email: bpelacho@unav.es
+    - family-names: Lara Astiaso
+      given-names: David
+      affiliation: Arc Institute of Science, Palo Alto, CA, USA; Department of Haematology, University of Cambridge, Cambridge, UK; Wellcome Trust-Medical Research Council Cambridge Stem Cell Institute, Cambridge, UKProgram of Cardiovascular Disease, Center for Applied Medical Research (CIMA), University of Navarra, Pamplona, Spain; Department of Biochemistry and Genetics, University of Navarra, Pamplona, Spain; Instituto de Investigación Sanitaria de Navarra (IdiSNA), Pamplona, Spain
+      orcid: https://orcid.org/0000-0001-8686-4675
+      email: david.astiaso@arcinstitute.org
+  title: Identification of epigenetic regulators of fibrotic transformation in cardiac fibroblasts through bulk and single-cell CRISPR screens
+  journal: Nature Communications
+  volume: 16
+  pages: 11660
+  year: 2025
+  doi: 10.1038/s41467-025-66597-9
+  license: CC-BY-NC-ND-4.0
+  pmcid: PMC12749234
